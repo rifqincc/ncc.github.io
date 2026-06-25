@@ -1,6 +1,4 @@
 /* style.css */
-
-/* Pengaturan Tab (Fade In Effect) */
 .tab-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -9,7 +7,6 @@
     display: block; 
 }
 
-/* Tab Indikator Desktop */
 .btn-tab {
     position: relative;
     padding-bottom: 0.5rem;
@@ -34,7 +31,6 @@
     width: 100%;
 }
 
-/* Keyframes */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -49,7 +45,6 @@
     to { opacity: 1; transform: scale(1); } 
 }
 
-/* Custom Scrollbar Elegan */
 .custom-scrollbar::-webkit-scrollbar { 
     width: 6px; 
 }
@@ -61,7 +56,6 @@
     background: #94a3b8; 
 }
 
-/* Animasi Spinner Loading Modern */
 .loader {
     border: 4px solid rgba(255, 255, 255, 0.2);
     border-top: 4px solid #ffffff;
@@ -77,18 +71,15 @@
     100% { transform: rotate(360deg); }
 }
 
-/* Transisi Umum */
 input, select, button {
     transition: all 0.2s ease;
 }
 
-/* Penyesuaian responsivitas nomor porsi qty resep */
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button {
     opacity: 1;
 }
 
-/* Ikon sort di header tabel summary */
 .sortable {
     cursor: pointer;
     user-select: none;
@@ -104,9 +95,15 @@ input[type="number"]::-webkit-outer-spin-button {
     color: #2563eb;
 }
 
-/* checkbox styling */
 .summary-checkbox, #select-all-summary {
     width: 16px;
     height: 16px;
     cursor: pointer;
+}
+
+#login-overlay {
+    transition: opacity 0.3s ease;
+}
+#login-overlay.hidden {
+    display: none;
 }
