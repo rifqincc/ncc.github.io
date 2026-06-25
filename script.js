@@ -12,8 +12,7 @@ let summarySortKey = 'nama';
 let summarySortAsc = true;
 let cachedResepSummaryData = [];
 
-// ---------- GLOBAL STATE ----------
-let currentUser = null;          // { id, email, role }
+let currentUser = null;
 let appSettings = {
   hpp_limit: 35,
   overhead_type: 'nominal',
@@ -112,6 +111,21 @@ function toggleKebabMenu(event, menuId) {
     if (isHidden) targetMenu.classList.remove('hidden');
 }
 
+// ---------- LOGIN SCREEN ----------
+function showLoginScreen() {
+    document.getElementById('login-overlay').classList.remove('hidden');
+    document.getElementById('login-overlay').style.opacity = '1';
+    document.getElementById('app-wrapper').classList.add('hidden');
+}
+
+function hideLoginScreen() {
+    document.getElementById('login-overlay').style.opacity = '0';
+    setTimeout(() => {
+        document.getElementById('login-overlay').classList.add('hidden');
+        document.getElementById('app-wrapper').classList.remove('hidden');
+    }, 300);
+}
+
 // ---------- ROLE HELPER ----------
 function hasRole(minRole) {
     if (!currentUser) return false;
@@ -126,24 +140,22 @@ async function inisialisasiAuth() {
         await fetchUserRoleAndSettings(session.user);
     } else {
         currentUser = null;
-        await loadAppSettings(); // tetap ambil settings (untuk guest sekalipun)
-        updateUIByRole();
+        showLoginScreen();
+        await loadAppSettings(); // tetap ambil untuk nanti
     }
-    // Listen auth changes
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
             await fetchUserRoleAndSettings(session.user);
         } else {
             currentUser = null;
+            showLoginScreen();
             await loadAppSettings();
-            updateUIByRole();
         }
     });
 }
 
 async function fetchUserRoleAndSettings(user) {
     showLoading();
-    // 1. Ambil role
     const { data: roleData, error: roleErr } = await supabaseClient
         .from('user_roles')
         .select('role')
@@ -152,7 +164,6 @@ async function fetchUserRoleAndSettings(user) {
 
     let role = 'staff';
     if (roleErr || !roleData) {
-        // Belum ada role -> buat default 'staff'
         const { error: insertErr } = await supabaseClient
             .from('user_roles')
             .insert([{ user_id: user.id, role: 'staff' }]);
@@ -163,12 +174,9 @@ async function fetchUserRoleAndSettings(user) {
     }
 
     currentUser = { id: user.id, email: user.email, role };
-
-    // 2. Ambil settings dari DB
     await loadAppSettings();
-
-    // 3. Update UI
     updateUIByRole();
+    hideLoginScreen();
     hideLoading();
 }
 
@@ -214,7 +222,7 @@ async function simpanSettings() {
             .update({ value: u.value, updated_at: new Date() })
             .eq('key', u.key);
     }
-    await loadAppSettings(); // refresh local
+    await loadAppSettings();
     updateUIByRole();
     hideLoading();
     alert('Pengaturan berhasil diperbarui untuk semua pengguna.');
@@ -229,14 +237,13 @@ async function loginAdmin() {
     if (!email || !password) return alert("Masukkan email dan password!");
     btn.innerText = "Memverifikasi...";
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-    btn.innerText = "Autentikasi";
+    btn.innerText = "Masuk";
     if (error) {
         alert("Gagal Login: " + error.message);
     } else {
-        closeModal('modal-login');
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
-        // Session akan di-handle oleh onAuthStateChange
+        // akan di-handle oleh onAuthStateChange
     }
 }
 
@@ -245,7 +252,6 @@ async function logoutAdmin() {
     showLoading();
     await supabaseClient.auth.signOut();
     hideLoading();
-    // UI akan di-update oleh onAuthStateChange
 }
 
 // ---------- UI UPDATE BERDASARKAN ROLE ----------
@@ -256,26 +262,22 @@ function updateUIByRole() {
     // ---- Sembunyikan semua tab dulu ----
     const allTabs = ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori', 'tab-settings'];
     const tabMap = {
-        guest: ['tab-direktori', 'tab-summary'],
         staff: ['tab-direktori', 'tab-summary'],
         admin: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku'],
         senior_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori'],
         head_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori', 'tab-settings']
     };
-    const allowed = tabMap[role] || tabMap.guest;
+    const allowed = tabMap[role] || tabMap.staff;
 
-    // Sembunyikan semua
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('active'); }
     });
 
-    // Tampilkan yang diizinkan
     allowed.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.remove('hidden'); }
     });
-    // Aktifkan tab pertama yang diizinkan
     const firstTab = allowed[0] || 'tab-direktori';
     const firstEl = document.getElementById(firstTab);
     if (firstEl) firstEl.classList.add('active');
@@ -303,33 +305,18 @@ function updateUIByRole() {
     // ---- Mobile menu ----
     const mobileMenuList = document.getElementById('mobile-menu-list');
     mobileMenuList.innerHTML = '';
-    // Status user
     const statusDiv = document.createElement('div');
     statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100';
     const statusSpan = document.createElement('span');
-    statusSpan.id = 'user-status-mobile';
-    if (isLoggedIn) {
-        statusSpan.className = 'text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg text-center shadow-inner';
-        statusSpan.innerText = `🌟 ${role.toUpperCase()} (${currentUser.email})`;
-    } else {
-        statusSpan.className = 'text-sm font-bold text-gray-500 bg-gray-100 border border-gray-200 px-3 py-2 rounded-lg text-center shadow-inner';
-        statusSpan.innerText = '👤 Guest (View Only)';
-    }
+    statusSpan.className = 'text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg text-center shadow-inner';
+    statusSpan.innerText = `🌟 ${role.toUpperCase()} (${currentUser.email})`;
     statusDiv.appendChild(statusSpan);
 
-    if (isLoggedIn) {
-        const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
-        logoutBtn.innerText = 'Logout Admin';
-        logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
-        statusDiv.appendChild(logoutBtn);
-    } else {
-        const loginBtn = document.createElement('button');
-        loginBtn.className = 'bg-gradient-to-r from-blue-600 to-blue-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
-        loginBtn.innerText = 'Admin Login';
-        loginBtn.onclick = () => { toggleMobileMenu(); document.getElementById('modal-login').classList.remove('hidden'); };
-        statusDiv.appendChild(loginBtn);
-    }
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
+    logoutBtn.innerText = 'Logout Admin';
+    logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
+    statusDiv.appendChild(logoutBtn);
     mobileMenuList.appendChild(statusDiv);
 
     allowed.forEach(id => {
@@ -354,7 +341,7 @@ function updateUIByRole() {
     // ---- Settings readonly message ----
     const msg = document.getElementById('settings-readonly-msg');
     if (msg) {
-        if (isLoggedIn && !hasRole('head_bar')) {
+        if (!hasRole('head_bar')) {
             msg.classList.remove('hidden');
         } else {
             msg.classList.add('hidden');
@@ -363,21 +350,15 @@ function updateUIByRole() {
 
     // ---- Status bar ----
     const userStatus = document.getElementById('user-status');
-    const btnLogin = document.getElementById('btn-login');
-    const btnLogout = document.getElementById('btn-logout');
     if (isLoggedIn) {
         userStatus.innerHTML = `🌟 ${role.toUpperCase()}`;
         userStatus.className = 'text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full shadow-inner border border-blue-200';
-        btnLogin.classList.add('hidden');
-        btnLogout.classList.remove('hidden');
     } else {
         userStatus.innerHTML = '👤 Guest';
         userStatus.className = 'text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full shadow-inner border border-gray-200';
-        btnLogin.classList.remove('hidden');
-        btnLogout.classList.add('hidden');
     }
 
-    // ---- Isi settings form dengan nilai dari DB ----
+    // ---- Isi settings form ----
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
     document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
     toggleOverheadInputStyle();
@@ -388,7 +369,7 @@ function updateUIByRole() {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
     }
 
-    // ---- Load data jika tab aktif ----
+    // ---- Muat data ----
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
         bbCurrentPage = 1;
         loadBahanBaku();
@@ -396,7 +377,7 @@ function updateUIByRole() {
     if (document.getElementById('tab-input-hpp').classList.contains('active')) {
         loadDropdownBahanBaku('baru');
     }
-    loadDirektori(); // selalu refresh data
+    loadDirektori();
 }
 
 // ---------- SWITCH TAB ----------
@@ -410,7 +391,6 @@ function switchTab(tabId) {
         target.classList.remove('hidden');
         target.classList.add('active');
     }
-    // Update active class di navbar
     document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
     const activeNav = Array.from(document.querySelectorAll('.btn-tab')).find(btn => {
         const onclickAttr = btn.getAttribute('onclick');
@@ -418,20 +398,13 @@ function switchTab(tabId) {
     });
     if (activeNav) activeNav.classList.add('active');
 
-    // Muat data sesuai tab
     if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
     if (tabId === 'tab-input-hpp') loadDropdownBahanBaku('baru');
     if (tabId === 'tab-direktori' || tabId === 'tab-summary' || tabId === 'tab-dashboard') loadDirektori();
     if (tabId === 'tab-summary') renderTableSummary();
 }
 
-// ==================== FUNGSI LAINNYA (tidak berubah banyak, hanya tambahan pengecekan role) ====================
-
-// [Semua fungsi dari kode asli, dengan penyesuaian role pada aksi kritis]
-// Saya akan menulis ulang beberapa fungsi penting, tapi karena panjang, saya tulis ringkas.
-// Untuk file final, saya sertakan semua fungsi yang sudah dimodifikasi.
-
-// ---------- BAHAN BAKU ----------
+// ==================== FUNGSI BAHAN BAKU ====================
 function kalkulasiHargaSatuBB(mode) {
     const prefix = mode === 'edit' ? 'edit-bb-' : 'bb-';
     const hrgBeli = getNilaiAsli(document.getElementById(prefix + 'harga-beli').value);
@@ -574,7 +547,7 @@ async function simpanEditBahanBaku() {
     else { closeModal('modal-edit-bb'); loadBahanBaku(); loadDirektori(); }
 }
 
-// ---------- KATEGORI ----------
+// ---------- FUNGSI KATEGORI ----------
 async function loadKategoriDB() {
     const { data, error } = await supabaseClient.from('kategori_db').select('*').order('nama');
     if (!error && data) {
@@ -789,7 +762,7 @@ async function simpanAssignMenu() {
     }
 }
 
-// ---------- DROPDOWN BAHAN BAKU (untuk input resep) ----------
+// ---------- DROPDOWN BAHAN BAKU UNTUK RESEP ----------
 async function loadDropdownBahanBaku(targetElement) {
     const { data } = await supabaseClient.from('bahan_baku').select('*').order('nama');
     bahanBakuList = data || [];
@@ -834,7 +807,7 @@ function pilihBahanBaku(mode, id, nama, harga, satuan) {
     document.getElementById(prefix + 'dropdown-list').classList.add('hidden');
 }
 
-// ---------- KOMPOSISI (Tambah / Edit) ----------
+// ---------- KOMPOSISI ----------
 function addTempKomposisi(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const id = document.getElementById(prefix + 'bb-selected-id').value;
@@ -1118,7 +1091,6 @@ function renderTableSummary() {
         return;
     }
 
-    const isAdmin = hasRole('admin'); // untuk checkbox (admin ke atas)
     const canEditResep = hasRole('senior_bar');
 
     const thCheckbox = document.getElementById('th-checkbox-summary');
@@ -1553,7 +1525,7 @@ function eksekusiImportResep(mode) {
     reader.readAsArrayBuffer(fileImportTertunda);
 }
 
-// ---------- GLOBAL EVENT LISTENER ----------
+// ---------- EVENT LISTENER ----------
 document.addEventListener('click', function(e) {
     const th = e.target.closest('.sortable');
     if (th && th.closest('#summary-table')) {
@@ -1580,5 +1552,4 @@ document.addEventListener('click', function(e) {
 window.onload = async () => {
     await inisialisasiAuth();
     await loadKategoriDB();
-    // Data akan dimuat oleh updateUIByRole
 };
