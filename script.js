@@ -284,29 +284,40 @@ async function simpanSettings() {
     if (btnText) btnText.innerHTML = '<span class="btn-mini-spinner"></span>Menyimpan...';
     showLoading();
 
-    // Catatan penting: gunakan UPSERT (bukan UPDATE biasa).
-    // UPDATE akan gagal secara diam-diam (0 baris terpengaruh) apabila baris
-    // dengan key tersebut belum pernah ada di tabel app_settings, sehingga
-    // nilai yang diinput user tidak pernah benar-benar tersimpan ke database.
-    // UPSERT akan otomatis membuat baris baru jika belum ada, atau memperbarui
-    // baris yang sudah ada — sehingga data dijamin tersimpan permanen.
+    // PENTING: pakai UPDATE per-baris (bukan upsert/insert).
+    // Tabel app_settings di Supabase hanya mengizinkan UPDATE lewat RLS policy
+    // (tidak ada izin INSERT). Baris hpp_limit / overhead_type / overhead_value
+    // WAJIB sudah ada lebih dulu di database (cukup sekali, lihat instruksi seed
+    // SQL yang diberikan saat setup). Setelah baris ada, UPDATE ini akan selalu
+    // berhasil tanpa perlu izin INSERT sama sekali.
     const updates = [
-        { key: 'hpp_limit', value: String(limitVal), updated_at: new Date() },
-        { key: 'overhead_type', value: ovhType, updated_at: new Date() },
-        { key: 'overhead_value', value: String(overheadVal), updated_at: new Date() }
+        { key: 'hpp_limit', value: String(limitVal) },
+        { key: 'overhead_type', value: ovhType },
+        { key: 'overhead_value', value: String(overheadVal) }
     ];
 
-    const { error: upsertErr } = await supabaseClient
-        .from('app_settings')
-        .upsert(updates, { onConflict: 'key' });
+    let gagalUpdate = false, errMsg = '';
+    for (const u of updates) {
+        const { error, data } = await supabaseClient
+            .from('app_settings')
+            .update({ value: u.value, updated_at: new Date() })
+            .eq('key', u.key)
+            .select();
+        if (error) { gagalUpdate = true; errMsg = error.message; break; }
+        if (!data || data.length === 0) {
+            gagalUpdate = true;
+            errMsg = `Baris dengan key "${u.key}" belum ada di tabel app_settings. Jalankan SQL seed terlebih dahulu di Supabase SQL Editor.`;
+            break;
+        }
+    }
 
     hideLoading();
     if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
     if (btnText) btnText.innerHTML = '💾 Simpan Pengaturan';
 
-    if (upsertErr) {
-        console.error('Gagal simpan settings:', upsertErr);
-        showToast('Gagal menyimpan pengaturan ke database: ' + upsertErr.message, 'error');
+    if (gagalUpdate) {
+        console.error('Gagal simpan settings:', errMsg);
+        showToast('Gagal menyimpan pengaturan: ' + errMsg, 'error');
         return;
     }
 
