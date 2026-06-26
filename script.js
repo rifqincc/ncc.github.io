@@ -44,16 +44,61 @@ function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
 
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) { alert(message); return; }
+    const styles = {
+        success: 'bg-emerald-600 border-emerald-800',
+        error: 'bg-red-600 border-red-800',
+        info: 'bg-blue-600 border-blue-800'
+    };
+    const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast-item ${styles[type] || styles.success} text-white px-5 py-4 rounded-xl shadow-2xl border-b-4 flex items-start gap-3 max-w-sm`;
+    toast.innerHTML = `<span class="text-xl leading-none">${icons[type] || icons.success}</span><span class="text-sm font-semibold leading-snug pt-0.5">${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 3800);
+}
+
 function toggleOverheadInputStyle() {
     const type = document.getElementById('setting-overhead-type').value;
     const symbol = document.getElementById('overhead-addon-symbol');
     const input = document.getElementById('setting-overhead');
+    const helper = document.getElementById('overhead-helper-text');
+    document.querySelectorAll('.overhead-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
     if (type === 'persen') {
         symbol.innerText = '%';
         input.placeholder = 'ex: 5';
+        if (helper) helper.innerText = 'Contoh: jika diisi 5, maka HPP bahan akan ditambah 5% dari nilainya sebagai biaya overhead.';
     } else {
         symbol.innerText = 'Rp';
         input.placeholder = '0';
+        if (helper) helper.innerText = 'Nilai ini akan ditambahkan secara tetap (flat) ke HPP setiap porsi resep.';
+    }
+}
+
+function setOverheadType(type) {
+    document.getElementById('setting-overhead-type').value = type;
+    toggleOverheadInputStyle();
+}
+
+function updateOverheadStatusBadge() {
+    const badge = document.getElementById('overhead-status-badge');
+    if (!badge) return;
+    if (appSettings.overhead_value > 0) {
+        const display = appSettings.overhead_type === 'persen'
+            ? `${appSettings.overhead_value}% / porsi`
+            : `${formatRp(appSettings.overhead_value)} / porsi`;
+        badge.innerHTML = `✅ Tersimpan: ${display}`;
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm whitespace-nowrap';
+    } else {
+        badge.innerHTML = `⚪ Belum diatur`;
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-gray-50 text-gray-500 border-gray-200 shadow-sm whitespace-nowrap';
     }
 }
 
@@ -216,7 +261,7 @@ async function loadAppSettings() {
 // ---------- SIMPAN SETTINGS KE DATABASE ----------
 async function simpanSettings() {
     if (!hasRole('head_bar')) {
-        alert('Hanya Head/Executive yang dapat mengubah pengaturan.');
+        showToast('Hanya Head/Executive yang dapat mengubah pengaturan.', 'error');
         return;
     }
     const limitVal = parseFloat(document.getElementById('setting-hpp-limit').value);
@@ -224,31 +269,52 @@ async function simpanSettings() {
     const inputOvh = document.getElementById('setting-overhead').value;
     const overheadVal = ovhType === 'nominal' ? getNilaiAsli(inputOvh) : (parseFloat(inputOvh) || 0);
 
-    if (limitVal <= 0 || limitVal > 100) {
-        alert('Masukkan persentase HPP limit yang valid (1-100)');
+    if (!limitVal || limitVal <= 0 || limitVal > 100) {
+        showToast('Masukkan persentase HPP limit yang valid (1-100).', 'error');
+        return;
+    }
+    if (ovhType === 'persen' && overheadVal > 100) {
+        showToast('Persentase overhead tidak boleh lebih dari 100%.', 'error');
         return;
     }
 
+    const btn = document.getElementById('btn-simpan-settings');
+    const btnText = document.getElementById('btn-simpan-settings-text');
+    if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); }
+    if (btnText) btnText.innerHTML = '<span class="btn-mini-spinner"></span>Menyimpan...';
     showLoading();
+
+    // Catatan penting: gunakan UPSERT (bukan UPDATE biasa).
+    // UPDATE akan gagal secara diam-diam (0 baris terpengaruh) apabila baris
+    // dengan key tersebut belum pernah ada di tabel app_settings, sehingga
+    // nilai yang diinput user tidak pernah benar-benar tersimpan ke database.
+    // UPSERT akan otomatis membuat baris baru jika belum ada, atau memperbarui
+    // baris yang sudah ada — sehingga data dijamin tersimpan permanen.
     const updates = [
-        { key: 'hpp_limit', value: String(limitVal) },
-        { key: 'overhead_type', value: ovhType },
-        { key: 'overhead_value', value: String(overheadVal) }
+        { key: 'hpp_limit', value: String(limitVal), updated_at: new Date() },
+        { key: 'overhead_type', value: ovhType, updated_at: new Date() },
+        { key: 'overhead_value', value: String(overheadVal), updated_at: new Date() }
     ];
-    for (let u of updates) {
-        await supabaseClient
-            .from('app_settings')
-            .update({ value: u.value, updated_at: new Date() })
-            .eq('key', u.key);
-    }
-    // Reload settings dari database
-    await loadAppSettings();
-    // Update seluruh UI
-    updateUIByRole();
-    // Refresh semua data yang memakai overhead
-    loadDirektori();
+
+    const { error: upsertErr } = await supabaseClient
+        .from('app_settings')
+        .upsert(updates, { onConflict: 'key' });
+
     hideLoading();
-    alert('✅ Pengaturan berhasil diperbarui untuk semua pengguna.');
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
+    if (btnText) btnText.innerHTML = '💾 Simpan Pengaturan';
+
+    if (upsertErr) {
+        console.error('Gagal simpan settings:', upsertErr);
+        showToast('Gagal menyimpan pengaturan ke database: ' + upsertErr.message, 'error');
+        return;
+    }
+
+    // Reload settings langsung dari database (bukan dari memori) untuk
+    // memastikan apa yang ditampilkan ke user adalah data yang benar-benar tersimpan.
+    await loadAppSettings();
+    updateUIByRole();
+    showToast('Pengaturan biaya overhead & batas HPP berhasil disimpan ke database untuk semua pengguna.', 'success');
 }
 
 // ---------- LOGIN / LOGOUT ----------
@@ -395,14 +461,14 @@ function updateUIByRole() {
 
     // ---- ISI SETTINGS FORM DARI appSettings (yang sudah di-load dari DB) ----
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
-    document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
-    toggleOverheadInputStyle();
+    setOverheadType(appSettings.overhead_type);
     if (appSettings.overhead_type === 'nominal') {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         formatRupiahInput(document.getElementById('setting-overhead'));
     } else {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
     }
+    updateOverheadStatusBadge();
 
     // ---- Load data untuk tab yang aktif ----
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
@@ -439,14 +505,14 @@ function switchTab(tabId) {
     // ---- Jika pindah ke tab Settings, reload ulang nilai dari appSettings ----
     if (tabId === 'tab-settings') {
         document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
-        document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
-        toggleOverheadInputStyle();
+        setOverheadType(appSettings.overhead_type);
         if (appSettings.overhead_type === 'nominal') {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
             formatRupiahInput(document.getElementById('setting-overhead'));
         } else {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         }
+        updateOverheadStatusBadge();
     }
 
     // ---- Load data sesuai tab ----
