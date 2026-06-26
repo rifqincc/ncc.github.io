@@ -15,7 +15,7 @@ let cachedResepSummaryData = [];
 let currentUser = null;
 let appSettings = {
   hpp_limit: 35,
-  overhead_type: 'nominal',
+  overhead_type: 'nominal',  // 'nominal' atau 'persen'
   overhead_value: 0
 };
 
@@ -141,7 +141,7 @@ async function inisialisasiAuth() {
     } else {
         currentUser = null;
         showLoginScreen();
-        await loadAppSettings(); // tetap ambil untuk nanti
+        await loadAppSettings();
     }
     supabaseClient.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user) {
@@ -156,14 +156,24 @@ async function inisialisasiAuth() {
 
 async function fetchUserRoleAndSettings(user) {
     showLoading();
+    
     const { data: roleData, error: roleErr } = await supabaseClient
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
 
+    console.log('roleData dari DB:', roleData);
+
     let role = 'staff';
-    if (roleErr || !roleData) {
+    if (roleErr) {
+        console.error('Error ambil role:', roleErr);
+        const { error: insertErr } = await supabaseClient
+            .from('user_roles')
+            .insert([{ user_id: user.id, role: 'staff' }]);
+        if (insertErr) console.error('Gagal insert role default:', insertErr);
+        role = 'staff';
+    } else if (!roleData) {
         const { error: insertErr } = await supabaseClient
             .from('user_roles')
             .insert([{ user_id: user.id, role: 'staff' }]);
@@ -174,27 +184,36 @@ async function fetchUserRoleAndSettings(user) {
     }
 
     currentUser = { id: user.id, email: user.email, role };
+    console.log('currentUser final:', currentUser);
+
     await loadAppSettings();
     updateUIByRole();
     hideLoginScreen();
     hideLoading();
 }
 
+// ---------- LOAD SETTINGS DARI DATABASE (DIPANGGIL SETIAP KALI DIBUTUHKAN) ----------
 async function loadAppSettings() {
-    const { data, error } = await supabaseClient
-        .from('app_settings')
-        .select('key, value');
-    if (error) {
-        console.error('Gagal ambil settings:', error);
-        return;
+    try {
+        const { data, error } = await supabaseClient
+            .from('app_settings')
+            .select('key, value');
+        if (error) {
+            console.error('Gagal ambil settings:', error);
+            return;
+        }
+        const map = {};
+        data.forEach(row => { map[row.key] = row.value; });
+        appSettings.hpp_limit = parseFloat(map.hpp_limit) || 35;
+        appSettings.overhead_type = map.overhead_type || 'nominal';
+        appSettings.overhead_value = parseFloat(map.overhead_value) || 0;
+        console.log('appSettings setelah load:', appSettings);
+    } catch (e) {
+        console.error('Error loadAppSettings:', e);
     }
-    const map = {};
-    data.forEach(row => { map[row.key] = row.value; });
-    appSettings.hpp_limit = parseFloat(map.hpp_limit) || 35;
-    appSettings.overhead_type = map.overhead_type || 'nominal';
-    appSettings.overhead_value = parseFloat(map.overhead_value) || 0;
 }
 
+// ---------- SIMPAN SETTINGS KE DATABASE ----------
 async function simpanSettings() {
     if (!hasRole('head_bar')) {
         alert('Hanya Head/Executive yang dapat mengubah pengaturan.');
@@ -222,11 +241,14 @@ async function simpanSettings() {
             .update({ value: u.value, updated_at: new Date() })
             .eq('key', u.key);
     }
+    // Reload settings dari database
     await loadAppSettings();
+    // Update seluruh UI
     updateUIByRole();
-    hideLoading();
-    alert('Pengaturan berhasil diperbarui untuk semua pengguna.');
+    // Refresh semua data yang memakai overhead
     loadDirektori();
+    hideLoading();
+    alert('✅ Pengaturan berhasil diperbarui untuk semua pengguna.');
 }
 
 // ---------- LOGIN / LOGOUT ----------
@@ -243,7 +265,6 @@ async function loginAdmin() {
     } else {
         document.getElementById('login-email').value = '';
         document.getElementById('login-password').value = '';
-        // akan di-handle oleh onAuthStateChange
     }
 }
 
@@ -256,10 +277,20 @@ async function logoutAdmin() {
 
 // ---------- UI UPDATE BERDASARKAN ROLE ----------
 function updateUIByRole() {
+    console.log('=== updateUIByRole dipanggil ===');
+    console.log('currentUser:', currentUser);
+    console.log('appSettings:', appSettings);
+
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
 
-    // ---- Sembunyikan semua tab dulu ----
+    const validRoles = ['staff', 'admin', 'senior_bar', 'head_bar'];
+    if (isLoggedIn && !validRoles.includes(role)) {
+        console.warn('Role tidak valid, diubah ke staff');
+        currentUser.role = 'staff';
+    }
+
+    // ---- Tab mapping ----
     const allTabs = ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori', 'tab-settings'];
     const tabMap = {
         staff: ['tab-direktori', 'tab-summary'],
@@ -269,11 +300,13 @@ function updateUIByRole() {
     };
     const allowed = tabMap[role] || tabMap.staff;
 
+    // Sembunyikan semua tab
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('active'); }
     });
 
+    // Tampilkan yang diizinkan
     allowed.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.remove('hidden'); }
@@ -282,7 +315,7 @@ function updateUIByRole() {
     const firstEl = document.getElementById(firstTab);
     if (firstEl) firstEl.classList.add('active');
 
-    // ---- Render navbar tabs ----
+    // ---- Render navbar ----
     const navbar = document.getElementById('navbar-tabs');
     const tabNames = {
         'tab-direktori': '📑 Directory Menu',
@@ -309,14 +342,16 @@ function updateUIByRole() {
     statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100';
     const statusSpan = document.createElement('span');
     statusSpan.className = 'text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg text-center shadow-inner';
-    statusSpan.innerText = `🌟 ${role.toUpperCase()} (${currentUser.email})`;
+    statusSpan.innerText = isLoggedIn ? `🌟 ${role.toUpperCase()} (${currentUser.email})` : '👤 Guest';
     statusDiv.appendChild(statusSpan);
 
-    const logoutBtn = document.createElement('button');
-    logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
-    logoutBtn.innerText = 'Logout Admin';
-    logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
-    statusDiv.appendChild(logoutBtn);
+    if (isLoggedIn) {
+        const logoutBtn = document.createElement('button');
+        logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
+        logoutBtn.innerText = 'Logout Admin';
+        logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
+        statusDiv.appendChild(logoutBtn);
+    }
     mobileMenuList.appendChild(statusDiv);
 
     allowed.forEach(id => {
@@ -327,7 +362,7 @@ function updateUIByRole() {
         mobileMenuList.appendChild(btn);
     });
 
-    // ---- Tampilkan/sembunyikan elemen berdasarkan role ----
+    // ---- Role-based visibility ----
     document.querySelectorAll('.role-admin').forEach(el => {
         el.classList.toggle('hidden', !hasRole('admin'));
     });
@@ -341,14 +376,14 @@ function updateUIByRole() {
     // ---- Settings readonly message ----
     const msg = document.getElementById('settings-readonly-msg');
     if (msg) {
-        if (!hasRole('head_bar')) {
+        if (isLoggedIn && !hasRole('head_bar')) {
             msg.classList.remove('hidden');
         } else {
             msg.classList.add('hidden');
         }
     }
 
-    // ---- Status bar ----
+    // ---- Status bar di navbar ----
     const userStatus = document.getElementById('user-status');
     if (isLoggedIn) {
         userStatus.innerHTML = `🌟 ${role.toUpperCase()}`;
@@ -358,7 +393,7 @@ function updateUIByRole() {
         userStatus.className = 'text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full shadow-inner border border-gray-200';
     }
 
-    // ---- Isi settings form ----
+    // ---- ISI SETTINGS FORM DARI appSettings (yang sudah di-load dari DB) ----
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
     document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
     toggleOverheadInputStyle();
@@ -369,7 +404,7 @@ function updateUIByRole() {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
     }
 
-    // ---- Muat data ----
+    // ---- Load data untuk tab yang aktif ----
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
         bbCurrentPage = 1;
         loadBahanBaku();
@@ -377,7 +412,10 @@ function updateUIByRole() {
     if (document.getElementById('tab-input-hpp').classList.contains('active')) {
         loadDropdownBahanBaku('baru');
     }
+    // Selalu refresh data resep (menggunakan overhead terbaru)
     loadDirektori();
+
+    console.log('=== updateUIByRole selesai, role sekarang:', role);
 }
 
 // ---------- SWITCH TAB ----------
@@ -398,6 +436,20 @@ function switchTab(tabId) {
     });
     if (activeNav) activeNav.classList.add('active');
 
+    // ---- Jika pindah ke tab Settings, reload ulang nilai dari appSettings ----
+    if (tabId === 'tab-settings') {
+        document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
+        document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
+        toggleOverheadInputStyle();
+        if (appSettings.overhead_type === 'nominal') {
+            document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
+            formatRupiahInput(document.getElementById('setting-overhead'));
+        } else {
+            document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
+        }
+    }
+
+    // ---- Load data sesuai tab ----
     if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
     if (tabId === 'tab-input-hpp') loadDropdownBahanBaku('baru');
     if (tabId === 'tab-direktori' || tabId === 'tab-summary' || tabId === 'tab-dashboard') loadDirektori();
@@ -869,6 +921,7 @@ function directUpdateQtyKomposisi(mode, idx, value) {
     }
 }
 
+// ---------- KALKULASI HPP (TERMASUK OVERHEAD) ----------
 function updateKalkulasiHPP(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
@@ -881,7 +934,12 @@ function updateKalkulasiHPP(mode) {
     const yieldPorsi = parseFloat(elYield.value) || 1;
     const totalBahanPokok = dataArr.reduce((sum, item) => sum + item.subtotal, 0);
     const costPerPorsiBase = (totalBahanPokok / yieldPorsi);
-    const overhead = appSettings.overhead_type === 'persen' ? (costPerPorsiBase * (appSettings.overhead_value / 100)) : appSettings.overhead_value;
+
+    // ---- HITUNG OVERHEAD BERDASARKAN SETTINGS ----
+    const overhead = appSettings.overhead_type === 'persen' 
+        ? (costPerPorsiBase * (appSettings.overhead_value / 100)) 
+        : appSettings.overhead_value;
+
     const hppPerPorsi = costPerPorsiBase + overhead;
     const marginValue = hargaJual - hppPerPorsi;
     const hppValue = hargaJual > 0 ? (hppPerPorsi / hargaJual) * 100 : 0;
@@ -895,6 +953,9 @@ function updateKalkulasiHPP(mode) {
     const elHPP = document.getElementById(prefix + 'persentase');
     elHPP.innerText = hppValue.toFixed(2) + '%';
     elHPP.className = hppValue > appSettings.hpp_limit ? 'font-black text-lg text-red-500' : 'font-black text-lg text-emerald-400';
+
+    // ---- Tampilkan overhead di form (opsional) ----
+    // Tidak ditampilkan di input form, tapi akan muncul di recipe card
 }
 
 // ---------- SIMPAN RESEP ----------
@@ -964,6 +1025,9 @@ async function duplikasiResepCard(id, namaMenu) {
 
 // ---------- LOAD DIREKTORI & SUMMARY ----------
 async function loadDirektori() {
+    // Pastikan settings selalu terbaru
+    await loadAppSettings();
+
     const { data: bbData } = await supabaseClient.from('bahan_baku').select('*');
     if (bbData) bahanBakuList = bbData;
 
@@ -980,15 +1044,25 @@ async function loadDirektori() {
         });
         const currentYield = menu.yield || 1;
         const costPerPorsiBase = (totalBiayaBahan / currentYield);
-        const overhead = appSettings.overhead_type === 'persen' ? (costPerPorsiBase * (appSettings.overhead_value / 100)) : appSettings.overhead_value;
+
+        // ---- HITUNG OVERHEAD ----
+        const overhead = appSettings.overhead_type === 'persen' 
+            ? (costPerPorsiBase * (appSettings.overhead_value / 100)) 
+            : appSettings.overhead_value;
+
         const hppPerPorsi = costPerPorsiBase + overhead;
+
         return {
             ...menu,
             yield: currentYield,
             totalCost: hppPerPorsi,
             margin: menu.harga_jual - hppPerPorsi,
             hppPersen: menu.harga_jual > 0 ? (hppPerPorsi / menu.harga_jual) * 100 : 0,
-            komposisiHTML
+            komposisiHTML,
+            // Tambahkan info overhead untuk ditampilkan di card
+            overhead: overhead,
+            overheadType: appSettings.overhead_type,
+            overheadValue: appSettings.overhead_value
         };
     });
 
@@ -997,6 +1071,7 @@ async function loadDirektori() {
     renderDashboardAnalitika();
 }
 
+// ---------- RENDER DIRECTORY (RECIPE CARD) ----------
 function renderCatalogDirektori() {
     let processedData = [...cachedResepSummaryData];
     const searchKey = document.getElementById('search-resep').value.toLowerCase();
@@ -1029,7 +1104,16 @@ function renderCatalogDirektori() {
             groupedData[kat][sub].forEach(menu => {
                 let hppColor = menu.hppPersen > appSettings.hpp_limit ? 'text-red-500' : 'text-emerald-600';
                 let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-600';
-                let ovhText = appSettings.overhead_value > 0 ? `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${appSettings.overhead_type === 'persen' ? appSettings.overhead_value + '%' : formatRp(appSettings.overhead_value)}</div>` : '';
+
+                // ---- TEKS OVERHEAD ----
+                let ovhText = '';
+                if (menu.overheadValue > 0) {
+                    if (menu.overheadType === 'persen') {
+                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${menu.overheadValue}% dari HPP bahan</div>`;
+                    } else {
+                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${formatRp(menu.overhead)}</div>`;
+                    }
+                }
 
                 html += `
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
@@ -1049,7 +1133,13 @@ function renderCatalogDirektori() {
                             <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 italic">Tanpa komposisi</li>'}</ul>
                             <div class="bg-gray-50 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 mt-auto">
                                 <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">Harga Jual:</span><span class="font-bold text-gray-800">${formatRp(menu.harga_jual)}</span></div>
-                                <div class="flex justify-between items-start border-t border-gray-200 pt-2"><span class="text-gray-500 font-medium">HPP / Porsi:</span><div class="text-right"><span class="font-bold text-gray-800 block">${formatRp(menu.totalCost)}</span>${ovhText}</div></div>
+                                <div class="flex justify-between items-start border-t border-gray-200 pt-2">
+                                    <span class="text-gray-500 font-medium">HPP / Porsi:</span>
+                                    <div class="text-right">
+                                        <span class="font-bold text-gray-800 block">${formatRp(menu.totalCost)}</span>
+                                        ${ovhText}
+                                    </div>
+                                </div>
                                 <div class="flex justify-between items-center border-t border-gray-200 pt-2"><span class="text-gray-500 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
                                 <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">% HPP:</span><span class="font-black text-lg ${hppColor}">${menu.hppPersen.toFixed(2)}%</span></div>
                             </div>
@@ -1163,12 +1253,19 @@ function infoResepCard(id) {
     const menu = cachedResepSummaryData.find(m => m.id === id);
     if (!menu) return alert('Data tidak ditemukan');
     document.getElementById('info-resep-nama').innerText = menu.nama;
+    let ovhText = '';
+    if (menu.overheadValue > 0) {
+        ovhText = menu.overheadType === 'persen' 
+            ? `<p><strong>Overhead:</strong> ${menu.overheadValue}% dari HPP bahan</p>` 
+            : `<p><strong>Overhead:</strong> ${formatRp(menu.overhead)}</p>`;
+    }
     let detailHtml = `
         <p><strong>Kategori:</strong> ${menu.kategori}</p>
         <p><strong>Sub Kategori:</strong> ${menu.sub_kategori}</p>
         <p><strong>Harga Jual:</strong> ${formatRp(menu.harga_jual)}</p>
         <p><strong>Yield (Porsi):</strong> ${menu.yield}</p>
         <p><strong>HPP / Porsi:</strong> ${formatRp(menu.totalCost)}</p>
+        ${ovhText}
         <p><strong>Margin:</strong> ${formatRp(menu.margin)}</p>
         <p><strong>% HPP:</strong> ${menu.hppPersen.toFixed(1)}%</p>
         <hr class="my-3" />
