@@ -155,3 +155,10 @@ input[type="number"]::-webkit-outer-spin-button {
     vertical-align: middle;
     margin-right: 6px;
 }
+/* style.css tambahan */
+.input-subtab {
+    transition: opacity 0.25s ease;
+}
+.input-subtab.hidden {
+    display: none;
+}
