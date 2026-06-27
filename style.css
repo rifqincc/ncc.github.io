@@ -162,3 +162,19 @@ input[type="number"]::-webkit-outer-spin-button {
 .input-subtab.hidden {
     display: none;
 }
+/* Tambahan untuk subtab input */
+.input-subtab {
+    transition: opacity 0.25s ease;
+}
+.input-subtab.hidden {
+    display: none;
+}
+
+/* Style untuk tabel input penjualan */
+#table-penjualan-input tbody tr:hover {
+    background-color: #f8fafc;
+}
+#table-penjualan-input input[type="number"]::-webkit-inner-spin-button,
+#table-penjualan-input input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+}
