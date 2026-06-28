@@ -155,13 +155,14 @@ input[type="number"]::-webkit-outer-spin-button {
     vertical-align: middle;
     margin-right: 6px;
 }
-/* style.css tambahan */
+
 .input-subtab {
     transition: opacity 0.25s ease;
 }
 .input-subtab.hidden {
     display: none;
 }
+
 /* Tambahan untuk subtab input */
 .input-subtab {
     transition: opacity 0.25s ease;
@@ -177,4 +178,23 @@ input[type="number"]::-webkit-outer-spin-button {
 #table-penjualan-input input[type="number"]::-webkit-inner-spin-button,
 #table-penjualan-input input[type="number"]::-webkit-outer-spin-button {
     opacity: 1;
+}
+
+/* ===== Perbaikan Kebab Menu Bahan Baku ===== */
+#table-bahan-baku .dropdown-menu {
+    min-width: 140px;
+    width: auto;
+    right: 0;
+    left: auto;
+    z-index: 30;
+}
+#table-bahan-baku .dropdown-menu button {
+    padding: 8px 16px;
+    font-weight: 600;
+}
+#table-bahan-baku .dropdown-menu button:hover {
+    background-color: #f1f5f9;
+}
+#table-bahan-baku .dropdown-menu button.border-t {
+    border-top: 1px solid #e5e7eb;
 }
