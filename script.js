@@ -21,8 +21,7 @@ let appSettings = {
 };
 
 // ===== TEMA =====
-let currentTheme = 'light'; // 'light', 'dark', 'auto'
-
+let currentTheme = 'light';
 function applyTheme(theme) {
     const html = document.documentElement;
     if (theme === 'auto') {
@@ -39,13 +38,10 @@ function applyTheme(theme) {
         currentTheme = 'light';
         document.getElementById('theme-status').innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Terang</span>`;
     }
-    // Simpan preferensi
     try { localStorage.setItem('preferred-theme', theme); } catch(e) {}
 }
-
 function setTheme(theme) {
     applyTheme(theme);
-    // Highlight tombol yang aktif
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.remove('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
         btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
@@ -58,12 +54,10 @@ function setTheme(theme) {
         btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
     }
 }
-
 function loadTheme() {
     let theme = 'light';
     try { theme = localStorage.getItem('preferred-theme') || 'light'; } catch(e) {}
     applyTheme(theme);
-    // Highlight tombol
     const btnMap = { light: 0, dark: 1, auto: 2 };
     const btns = document.querySelectorAll('.theme-btn');
     if (btns[btnMap[theme]]) {
@@ -71,17 +65,13 @@ function loadTheme() {
         btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
         btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
     }
-    // Listener perubahan sistem
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
-        if (currentTheme === 'auto') {
-            applyTheme('auto');
-        }
+        if (currentTheme === 'auto') applyTheme('auto');
     });
 }
 
 // ---------- HELPERS ----------
 const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(angka);
-
 function formatRupiahInput(element) {
     let val = element.value.replace(/[^,\d]/g, '').toString();
     let split = val.split(',');
@@ -95,34 +85,23 @@ function formatRupiahInput(element) {
     rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
     element.value = rupiah;
 }
-
 function getNilaiAsli(stringInput) {
     return parseFloat(String(stringInput).replace(/[^0-9]/g, '')) || 0;
 }
-
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
-
 function showToast(message, type = 'success') {
     const container = document.getElementById('toast-container');
     if (!container) { alert(message); return; }
-    const styles = {
-        success: 'bg-emerald-600 border-emerald-800',
-        error: 'bg-red-600 border-red-800',
-        info: 'bg-blue-600 border-blue-800'
-    };
+    const styles = { success: 'bg-emerald-600 border-emerald-800', error: 'bg-red-600 border-red-800', info: 'bg-blue-600 border-blue-800' };
     const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
     const toast = document.createElement('div');
     toast.className = `toast-item ${styles[type] || styles.success} text-white px-5 py-4 rounded-xl shadow-2xl border-b-4 flex items-start gap-3 max-w-sm`;
     toast.innerHTML = `<span class="text-xl leading-none">${icons[type] || icons.success}</span><span class="text-sm font-semibold leading-snug pt-0.5">${message}</span>`;
     container.appendChild(toast);
-    setTimeout(() => {
-        toast.classList.add('toast-out');
-        setTimeout(() => toast.remove(), 300);
-    }, 3800);
+    setTimeout(() => { toast.classList.add('toast-out'); setTimeout(() => toast.remove(), 300); }, 3800);
 }
-
 function toggleOverheadInputStyle() {
     const type = document.getElementById('setting-overhead-type').value;
     const symbol = document.getElementById('overhead-addon-symbol');
@@ -141,12 +120,10 @@ function toggleOverheadInputStyle() {
         if (helper) helper.innerText = 'Nilai ini akan ditambahkan secara tetap (flat) ke HPP setiap porsi resep.';
     }
 }
-
 function setOverheadType(type) {
     document.getElementById('setting-overhead-type').value = type;
     toggleOverheadInputStyle();
 }
-
 function updateOverheadStatusBadge() {
     const badge = document.getElementById('overhead-status-badge');
     if (!badge) return;
@@ -161,22 +138,12 @@ function updateOverheadStatusBadge() {
         badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 shadow-sm whitespace-nowrap';
     }
 }
-
 function handleOverheadInputFormatting(element) {
     const type = document.getElementById('setting-overhead-type').value;
-    if (type === 'nominal') {
-        formatRupiahInput(element);
-    }
+    if (type === 'nominal') formatRupiahInput(element);
 }
-
-function showLoading() {
-    document.getElementById('loading-overlay').classList.remove('hidden');
-}
-
-function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-}
-
+function showLoading() { document.getElementById('loading-overlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
 function showSummaryModal(isSuccess, title, successCount, failCount) {
     document.getElementById('summary-icon').innerText = isSuccess ? '✅' : '⚠️';
     document.getElementById('summary-title').innerText = title;
@@ -184,7 +151,6 @@ function showSummaryModal(isSuccess, title, successCount, failCount) {
     document.getElementById('summary-fail').innerText = failCount;
     document.getElementById('modal-summary').classList.remove('hidden');
 }
-
 function getCardGradient(str) {
     const gradients = ['from-slate-800 to-slate-900', 'from-blue-800 to-indigo-900', 'from-emerald-800 to-teal-900', 'from-rose-800 to-pink-900', 'from-amber-800 to-orange-900', 'from-purple-800 to-fuchsia-900', 'from-cyan-800 to-blue-900', 'from-red-800 to-rose-900', 'from-lime-800 to-green-900'];
     let hash = 0;
@@ -193,7 +159,6 @@ function getCardGradient(str) {
     }
     return gradients[Math.abs(hash) % gradients.length];
 }
-
 function toggleMobileMenu() {
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('mobile-overlay');
@@ -207,7 +172,6 @@ function toggleMobileMenu() {
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
 }
-
 function toggleKebabMenu(event, menuId) {
     event.stopPropagation();
     const targetMenu = document.getElementById(menuId);
@@ -222,7 +186,6 @@ function showLoginScreen() {
     document.getElementById('login-overlay').style.opacity = '1';
     document.getElementById('app-wrapper').classList.add('hidden');
 }
-
 function hideLoginScreen() {
     document.getElementById('login-overlay').style.opacity = '0';
     setTimeout(() => {
@@ -230,7 +193,6 @@ function hideLoginScreen() {
         document.getElementById('app-wrapper').classList.remove('hidden');
     }, 300);
 }
-
 function hasRole(minRole) {
     if (!currentUser) return false;
     const hierarchy = { staff: 1, admin: 2, senior_bar: 3, head_bar: 4 };
@@ -257,7 +219,6 @@ async function inisialisasiAuth() {
         }
     });
 }
-
 async function fetchUserRoleAndSettings(user) {
     showLoading();
     const { data: roleData, error: roleErr } = await supabaseClient
@@ -291,7 +252,6 @@ async function loadAppSettings() {
         appSettings.overhead_value = parseFloat(map.overhead_value) || 0;
     } catch (e) {}
 }
-
 async function simpanSettings() {
     if (!hasRole('head_bar')) {
         showToast('Hanya Head/Executive yang dapat mengubah pengaturan.', 'error');
@@ -356,7 +316,6 @@ async function loginAdmin() {
     btn.innerText = "Masuk";
     if (error) alert("Gagal Login: " + error.message);
 }
-
 async function logoutAdmin() {
     if (!confirm("Apakah Anda yakin ingin keluar?")) return;
     showLoading();
@@ -368,12 +327,12 @@ async function logoutAdmin() {
 function updateUIByRole() {
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
-    const allTabs = ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input', 'tab-kategori', 'tab-data-penjualan', 'tab-settings'];
+    const allTabs = ['tab-direktori', 'tab-hpp', 'tab-dashboard', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings'];
     const tabMap = {
-        staff: ['tab-direktori', 'tab-summary'],
-        admin: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku'],
-        senior_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input', 'tab-kategori', 'tab-data-penjualan'],
-        head_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input', 'tab-kategori', 'tab-data-penjualan', 'tab-settings']
+        staff: ['tab-direktori', 'tab-hpp'],
+        admin: ['tab-direktori', 'tab-hpp', 'tab-dashboard', 'tab-bahan-baku'],
+        senior_bar: ['tab-direktori', 'tab-hpp', 'tab-dashboard', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan'],
+        head_bar: ['tab-direktori', 'tab-hpp', 'tab-dashboard', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings']
     };
     const allowed = tabMap[role] || tabMap.staff;
     allTabs.forEach(id => {
@@ -388,14 +347,12 @@ function updateUIByRole() {
     const firstEl = document.getElementById(firstTab);
     if (firstEl) firstEl.classList.add('active');
 
-    // Navbar
     const navbar = document.getElementById('navbar-tabs');
     const tabNames = {
         'tab-direktori': '📑 Directory Menu',
-        'tab-summary': '📊 Summary HPP',
+        'tab-hpp': '📊 HPP & Summary',
         'tab-dashboard': '📈 Dashboard',
         'tab-bahan-baku': '📦 Bahan Baku',
-        'tab-input': '✍️ Input Data',
         'tab-kategori': '🏷️ Kategori',
         'tab-data-penjualan': '📋 Data Penjualan',
         'tab-settings': '⚙️ Settings'
@@ -409,7 +366,6 @@ function updateUIByRole() {
         navbar.appendChild(btn);
     });
 
-    // Mobile menu
     const mobileMenuList = document.getElementById('mobile-menu-list');
     mobileMenuList.innerHTML = '';
     const statusDiv = document.createElement('div');
@@ -434,7 +390,6 @@ function updateUIByRole() {
         mobileMenuList.appendChild(btn);
     });
 
-    // Role visibility
     document.querySelectorAll('.role-admin').forEach(el => el.classList.toggle('hidden', !hasRole('admin')));
     document.querySelectorAll('.role-senior').forEach(el => el.classList.toggle('hidden', !hasRole('senior_bar')));
     document.querySelectorAll('.role-head').forEach(el => el.classList.toggle('hidden', !hasRole('head_bar')));
@@ -469,9 +424,8 @@ function updateUIByRole() {
         bbCurrentPage = 1;
         loadBahanBaku();
     }
-    if (document.getElementById('tab-input').classList.contains('active')) {
+    if (document.getElementById('tab-hpp').classList.contains('active')) {
         loadDropdownBahanBaku('baru');
-        switchInputSubTab('hpp');
     }
     loadDirektori();
 }
@@ -504,24 +458,26 @@ function switchTab(tabId) {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         }
         updateOverheadStatusBadge();
-        loadTheme(); // Pastikan tema di-render
+        loadTheme();
     }
     if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
-    if (tabId === 'tab-input') { loadDropdownBahanBaku('baru'); switchInputSubTab('hpp'); }
-    if (tabId === 'tab-direktori' || tabId === 'tab-summary' || tabId === 'tab-dashboard') loadDirektori();
-    if (tabId === 'tab-summary') renderTableSummary();
-    if (tabId === 'tab-data-penjualan') loadDataPenjualan();
+    if (tabId === 'tab-hpp') { loadDropdownBahanBaku('baru'); }
+    if (tabId === 'tab-direktori' || tabId === 'tab-hpp' || tabId === 'tab-dashboard') loadDirektori();
+    if (tabId === 'tab-hpp') renderTableSummary();
+    if (tabId === 'tab-data-penjualan') {
+        loadDataPenjualan();
+        renderTablePenjualanInput();
+    }
     if (tabId === 'tab-dashboard') {
         setTimeout(updateDashboardEngineering, 500);
-    }
-    if (tabId === 'tab-input') {
-        if (document.getElementById('subtab-penjualan') && !document.getElementById('subtab-penjualan').classList.contains('hidden')) {
-            renderTablePenjualanInput();
-        }
     }
 }
 
 // ==================== BAHAN BAKU ====================
+// (semua fungsi bahan baku tetap sama seperti sebelumnya, tidak saya tulis ulang agar tidak terlalu panjang)
+// Saya asumsikan Anda sudah memiliki kode lengkap dari versi sebelumnya.
+// Untuk menghemat, saya tulis ulang fungsi-fungsi penting yang digunakan.
+
 function kalkulasiHargaSatuBB(mode) {
     const prefix = mode === 'edit' ? 'edit-bb-' : 'bb-';
     const hrgBeli = getNilaiAsli(document.getElementById(prefix + 'harga-beli').value);
@@ -529,32 +485,22 @@ function kalkulasiHargaSatuBB(mode) {
     const satuan = document.getElementById(prefix + 'satuan-resep').value || '-';
     document.getElementById(prefix + 'harga-final').innerText = `${formatRp(hrgBeli / (konversi > 0 ? konversi : 1))} / ${satuan}`;
 }
-
 function sortBahanBaku(key, order) {
-    bbSortKey = key;
-    bbSortOrder = order;
-    bbCurrentPage = 1;
+    bbSortKey = key; bbSortOrder = order; bbCurrentPage = 1;
     document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
     renderTabelBahanBaku();
 }
-
 async function loadBahanBaku() {
     const { data, error } = await supabaseClient.from('bahan_baku').select('*');
     if (!error) { bahanBakuList = data; renderTabelBahanBaku(); }
 }
-
 function updatePaginationBB() {
     bbCurrentPage = 1;
     const val = document.getElementById('bb-per-page').value;
     bbItemsPerPage = val === 'all' ? bahanBakuList.length : parseInt(val);
     renderTabelBahanBaku();
 }
-
-function ubahHalamanBB(page) {
-    bbCurrentPage = page;
-    renderTabelBahanBaku();
-}
-
+function ubahHalamanBB(page) { bbCurrentPage = page; renderTabelBahanBaku(); }
 function renderTabelBahanBaku() {
     const searchQuery = document.getElementById('search-bb').value.toLowerCase();
     let filteredData = bahanBakuList.filter(item => item.nama.toLowerCase().includes(searchQuery));
@@ -617,7 +563,6 @@ function renderTabelBahanBaku() {
     }
     document.getElementById('bb-pagination-controls').innerHTML = btnHTML;
 }
-
 async function tambahBahanBaku() {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     const nama = document.getElementById('bb-nama').value.trim();
@@ -637,7 +582,6 @@ async function tambahBahanBaku() {
         loadBahanBaku();
     }
 }
-
 async function aksiHapusBahanBaku(id, nama) {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     if (confirm(`Yakin hapus "${nama}"?`)) {
@@ -650,7 +594,6 @@ async function aksiHapusBahanBaku(id, nama) {
         } else loadBahanBaku();
     }
 }
-
 function bukaModalEditBB(item) {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     document.getElementById('edit-bb-id').value = item.id;
@@ -663,7 +606,6 @@ function bukaModalEditBB(item) {
     kalkulasiHargaSatuBB('edit');
     document.getElementById('modal-edit-bb').classList.remove('hidden');
 }
-
 async function simpanEditBahanBaku() {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     const id = document.getElementById('edit-bb-id').value;
@@ -681,6 +623,7 @@ async function simpanEditBahanBaku() {
 }
 
 // ==================== KATEGORI ====================
+// (sama seperti sebelumnya)
 async function loadKategoriDB() {
     const { data, error } = await supabaseClient.from('kategori_db').select('*').order('nama');
     if (!error && data) {
@@ -692,7 +635,6 @@ async function loadKategoriDB() {
         populateKategoriFilterPenjualan();
     }
 }
-
 function renderDropdownKategori() {
     const optKat = '<option value="Uncategorized">-- Pilih Kategori --</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     const optSub = '<option value="Uncategorized">-- Pilih Sub-Kategori --</option>' + listSubKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
@@ -703,7 +645,6 @@ function renderDropdownKategori() {
         fSum.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     }
 }
-
 function populateFilterKategoriDirektori() {
     const filterEl = document.getElementById('filter-kategori-direktori');
     if (!filterEl) return;
@@ -711,7 +652,6 @@ function populateFilterKategoriDirektori() {
     filterEl.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     filterEl.value = currentVal;
 }
-
 function populateKategoriFilterPenjualan() {
     const filterEl = document.getElementById('jual-filter-kategori');
     if (!filterEl) return;
@@ -719,7 +659,6 @@ function populateKategoriFilterPenjualan() {
     filterEl.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     filterEl.value = currentVal;
 }
-
 function renderTabelManajemenKategori() {
     const ulKat = document.getElementById('list-manajemen-kategori');
     const ulSub = document.getElementById('list-manajemen-sub-kategori');
@@ -742,7 +681,6 @@ function renderTabelManajemenKategori() {
     ulKat.innerHTML = generateHTML(listKategori, 'Kategori');
     ulSub.innerHTML = generateHTML(listSubKategori, 'Sub-Kategori');
 }
-
 function bukaModalFormKategori(jenis, mode, id = null, oldName = '') {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     document.getElementById('kat-modal-jenis').value = jenis;
@@ -760,7 +698,6 @@ function bukaModalFormKategori(jenis, mode, id = null, oldName = '') {
     }
     document.getElementById('modal-kelola-kategori').classList.remove('hidden');
 }
-
 async function simpanKategoriManajemen() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const jenis = document.getElementById('kat-modal-jenis').value;
@@ -792,7 +729,6 @@ async function simpanKategoriManajemen() {
         alert(`Nama berhasil diubah! Seluruh sinkronisasi data resep aman.`);
     }
 }
-
 async function hapusKategoriManajemen(id, jenis, nama) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const targetField = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
@@ -818,7 +754,6 @@ async function hapusKategoriManajemen(id, jenis, nama) {
         hideLoading();
     }
 }
-
 async function bukaModalAssignMenu(jenis, namaTarget) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     document.getElementById('assign-target-nama').value = namaTarget;
@@ -833,7 +768,6 @@ async function bukaModalAssignMenu(jenis, namaTarget) {
     renderAssignMenuList();
     document.getElementById('modal-assign-menu').classList.remove('hidden');
 }
-
 function renderAssignMenuList() {
     const listContainer = document.getElementById('assign-menu-list');
     const searchQ = document.getElementById('search-assign-menu').value.toLowerCase();
@@ -865,9 +799,7 @@ function renderAssignMenuList() {
         `;
     });
 }
-
 function filterAssignMenu() { renderAssignMenuList(); }
-
 async function simpanAssignMenu() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const jenis = document.getElementById('assign-target-jenis').value;
@@ -918,13 +850,11 @@ async function loadDropdownBahanBaku(targetElement) {
         });
     }
 }
-
 function bukaDropdownBB(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     document.getElementById(prefix + 'dropdown-list').classList.remove('hidden');
     filterDropdownBB(mode);
 }
-
 function filterDropdownBB(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const inputVal = document.getElementById(prefix + 'pilih-bb').value.toLowerCase();
@@ -937,7 +867,6 @@ function filterDropdownBB(mode) {
         }
     }
 }
-
 function pilihBahanBaku(mode, id, nama, harga, satuan) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     document.getElementById(prefix + 'pilih-bb').value = nama;
@@ -965,13 +894,11 @@ function addTempKomposisi(mode) {
     document.getElementById(prefix + 'qty-bb').value = '';
     renderKomposisi(mode);
 }
-
 function removeTempKomposisi(mode, index) {
     if (mode === 'edit') tempKomposisiEdit.splice(index, 1);
     else tempKomposisiBaru.splice(index, 1);
     renderKomposisi(mode);
 }
-
 function renderKomposisi(mode) {
     const prefix = mode === 'edit' ? 'edit-' : '';
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
@@ -994,7 +921,6 @@ function renderKomposisi(mode) {
     });
     updateKalkulasiHPP(mode);
 }
-
 function directUpdateQtyKomposisi(mode, idx, value) {
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
     const currentQty = parseFloat(value) || 0;
@@ -1009,7 +935,6 @@ function directUpdateQtyKomposisi(mode, idx, value) {
         updateKalkulasiHPP(mode);
     }
 }
-
 function updateKalkulasiHPP(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
@@ -1036,7 +961,6 @@ function updateKalkulasiHPP(mode) {
     elHPP.innerText = hppValue.toFixed(2) + '%';
     elHPP.className = hppValue > appSettings.hpp_limit ? 'font-black text-lg text-red-500' : 'font-black text-lg text-emerald-400';
 }
-
 async function simpanResepFinal() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     let nama = document.getElementById('r-nama').value.trim();
@@ -1061,10 +985,9 @@ async function simpanResepFinal() {
         document.getElementById('r-yield').value = '1';
         tempKomposisiBaru = [];
         renderKomposisi('baru');
-        switchTab('tab-direktori');
+        switchTab('tab-hpp');
     }
 }
-
 async function duplikasiResepCard(id, namaMenu) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     if (!confirm(`Apakah Anda yakin ingin menduplikasi resep "${namaMenu}"?`)) return;
@@ -1140,7 +1063,7 @@ async function loadDirektori() {
     if (document.getElementById('tab-dashboard').classList.contains('active')) {
         updateDashboardEngineering();
     }
-    if (document.getElementById('subtab-penjualan') && !document.getElementById('subtab-penjualan').classList.contains('hidden')) {
+    if (document.getElementById('tab-data-penjualan').classList.contains('active')) {
         renderTablePenjualanInput();
     }
 }
@@ -1304,7 +1227,6 @@ function renderTableSummary() {
     const selectAll = document.getElementById('select-all-summary');
     if (selectAll) selectAll.checked = false;
 }
-
 function infoResepCard(id) {
     const menu = cachedResepSummaryData.find(m => m.id === id);
     if (!menu) return alert('Data tidak ditemukan');
@@ -1331,12 +1253,10 @@ function infoResepCard(id) {
     document.getElementById('info-resep-detail').innerHTML = detailHtml;
     document.getElementById('modal-info-resep').classList.remove('hidden');
 }
-
 function toggleSelectAllSummary() {
     const checked = document.getElementById('select-all-summary').checked;
     document.querySelectorAll('.summary-checkbox').forEach(cb => cb.checked = checked);
 }
-
 async function hapusMassalResep() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const checkboxes = document.querySelectorAll('.summary-checkbox:checked');
@@ -1434,7 +1354,6 @@ async function bukaModalEditResep(menuObj) {
     renderKomposisi('edit');
     document.getElementById('modal-edit-resep').classList.remove('hidden');
 }
-
 async function simpanEditResep() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const resepId = document.getElementById('edit-r-id').value;
@@ -1462,7 +1381,6 @@ function initiateImport(event, type) {
     jenisImportTertunda = type;
     document.getElementById('modal-import-option').classList.remove('hidden');
 }
-
 function batalImport() {
     fileImportTertunda = null;
     jenisImportTertunda = '';
@@ -1472,7 +1390,6 @@ function batalImport() {
     if (document.getElementById('import-penjualan-file')) document.getElementById('import-penjualan-file').value = '';
     closeModal('modal-import-option');
 }
-
 function jalankanImport(mode) {
     closeModal('modal-import-option');
     showLoading();
@@ -1489,14 +1406,12 @@ function downloadTemplateBahanBaku() {
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_Bahan_Baku.xlsx");
 }
-
 function exportBahanBakuToExcel() {
     const ws = XLSX.utils.json_to_sheet(bahanBakuList.map(i => ({ "ID": i.id, "Nama Bahan": i.nama, "Satuan Beli": i.satuan_beli, "Harga Beli": i.harga_beli, "Konversi": i.nilai_konversi, "Satuan Resep": i.satuan, "Harga per Satuan": i.harga })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data");
     XLSX.writeFile(wb, "BahanBaku_Export.xlsx");
 }
-
 function eksekusiImportBahanBaku(mode) {
     if (!hasRole('admin')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1550,7 +1465,6 @@ function downloadTemplateKategori() {
     XLSX.utils.book_append_sheet(wb, ws, "Template_Kategori");
     XLSX.writeFile(wb, "Template_Kategori_Master.xlsx");
 }
-
 function exportKategoriToExcel() {
     const listGabung = [
         ...listKategori.map(k => ({ "ID": k.id, "Nama": k.nama, "Jenis": "Kategori" })),
@@ -1561,7 +1475,6 @@ function exportKategoriToExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Kategori_DB");
     XLSX.writeFile(wb, "Kategori_Export.xlsx");
 }
-
 function eksekusiImportKategori(mode) {
     if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1604,7 +1517,6 @@ function downloadTemplateResep() {
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_Resep.xlsx");
 }
-
 async function exportResepToExcel() {
     const { data } = await supabaseClient.from('resep').select(`nama,kategori,sub_kategori,harga_jual,yield,resep_detail(qty,bahan_baku(nama,satuan,harga))`);
     let rec = [];
@@ -1614,7 +1526,6 @@ async function exportResepToExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Resep");
     XLSX.writeFile(wb, "Resep_Export.xlsx");
 }
-
 function eksekusiImportResep(mode) {
     if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1669,7 +1580,7 @@ function eksekusiImportResep(mode) {
     reader.readAsArrayBuffer(fileImportTertunda);
 }
 
-// ==================== PENJUALAN MASSAL (TABLE INPUT) ====================
+// ==================== PENJUALAN ====================
 function initBulanTahunDropdowns() {
     const bulanSelects = ['jual-bulan', 'filter-data-bulan', 'dash-filter-bulan'];
     const bulanNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
@@ -1697,7 +1608,6 @@ function initBulanTahunDropdowns() {
         if (id === 'jual-tahun' || id === 'dash-filter-tahun') el.value = currentYear;
     });
 }
-
 async function loadMenuDropdownPenjualan() {
     const { data, error } = await supabaseClient.from('resep').select('id, nama, harga_jual').order('nama');
     if (error) return;
@@ -1711,7 +1621,6 @@ async function loadMenuDropdownPenjualan() {
         });
     });
 }
-
 function renderTablePenjualanInput() {
     const tbody = document.getElementById('table-penjualan-input-body');
     if (!tbody) return;
@@ -1763,7 +1672,6 @@ function renderTablePenjualanInput() {
         });
     });
 }
-
 function updatePenjualanInput(id, field, value) {
     if (!penjualanInputData[id]) {
         const menu = cachedResepSummaryData.find(m => m.id === id);
@@ -1775,7 +1683,6 @@ function updatePenjualanInput(id, field, value) {
         penjualanInputData[id].harga_jual = getNilaiAsli(value);
     }
 }
-
 async function simpanPenjualanMassal() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const bulan = parseInt(document.getElementById('jual-bulan').value);
@@ -1836,8 +1743,6 @@ async function simpanPenjualanMassal() {
         loadDataPenjualan();
     }
 }
-
-// ==================== PENJUALAN IMPORT/EXPORT ====================
 function downloadTemplatePenjualan() {
     const ws = XLSX.utils.json_to_sheet([
         { "Nama Menu": "Iced Choco Banana", "Kategori": "Beverage", "Sub Kategori": "Non-Coffee", "Qty Terjual": 150, "Harga Jual": 28000 },
@@ -1847,14 +1752,12 @@ function downloadTemplatePenjualan() {
     XLSX.utils.book_append_sheet(wb, ws, "Template Penjualan");
     XLSX.writeFile(wb, "Template_Penjualan.xlsx");
 }
-
 function initiateImportPenjualan(event) {
     fileImportTertunda = event.target.files[0];
     if (!fileImportTertunda) return;
     jenisImportTertunda = 'penjualan';
     document.getElementById('modal-import-option').classList.remove('hidden');
 }
-
 function eksekusiImportPenjualan(mode) {
     if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1937,7 +1840,6 @@ function eksekusiImportPenjualan(mode) {
     };
     reader.readAsArrayBuffer(fileImportTertunda);
 }
-
 function exportPenjualanToExcel() {
     const bulan = document.getElementById('filter-data-bulan').value;
     const tahun = document.getElementById('filter-data-tahun').value;
@@ -1974,8 +1876,6 @@ function exportPenjualanToExcel() {
         XLSX.writeFile(wb, `Penjualan_${bulan || 'all'}_${tahun || 'all'}.xlsx`);
     });
 }
-
-// ==================== DATA PENJUALAN (TABEL) ====================
 async function loadDataPenjualan() {
     const bulan = document.getElementById('filter-data-bulan').value;
     const tahun = document.getElementById('filter-data-tahun').value;
@@ -2039,7 +1939,6 @@ async function loadDataPenjualan() {
         else btnMassal.classList.add('hidden');
     }
 }
-
 async function hapusPenjualan(id) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     if (!confirm('Hapus data penjualan ini?')) return;
@@ -2049,7 +1948,6 @@ async function hapusPenjualan(id) {
     if (error) alert('Gagal hapus.');
     else loadDataPenjualan();
 }
-
 async function hapusPenjualanTerpilih() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const checkboxes = document.querySelectorAll('.penjualan-checkbox:checked');
@@ -2062,7 +1960,6 @@ async function hapusPenjualanTerpilih() {
     if (error) alert('Gagal hapus massal.');
     else loadDataPenjualan();
 }
-
 function toggleSelectAllPenjualan() {
     const checked = document.getElementById('select-all-penjualan').checked;
     document.querySelectorAll('.penjualan-checkbox').forEach(cb => cb.checked = checked);
@@ -2146,26 +2043,6 @@ async function updateDashboardEngineering() {
     });
 }
 
-// ==================== SWITCH SUBTAB INPUT ====================
-function switchInputSubTab(tab) {
-    const hpp = document.getElementById('subtab-hpp');
-    const penjualan = document.getElementById('subtab-penjualan');
-    const btnHpp = document.getElementById('subtab-hpp-btn');
-    const btnPenjualan = document.getElementById('subtab-penjualan-btn');
-    if (tab === 'hpp') {
-        hpp.classList.remove('hidden');
-        penjualan.classList.add('hidden');
-        btnHpp.className = 'bg-white/30 backdrop-blur border border-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-white/30 transition-colors';
-        btnPenjualan.className = 'bg-white/20 backdrop-blur border border-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-white/30 transition-colors';
-    } else {
-        hpp.classList.add('hidden');
-        penjualan.classList.remove('hidden');
-        btnPenjualan.className = 'bg-white/30 backdrop-blur border border-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-white/30 transition-colors';
-        btnHpp.className = 'bg-white/20 backdrop-blur border border-white/30 text-white px-4 py-1.5 rounded-lg text-sm font-bold hover:bg-white/30 transition-colors';
-        renderTablePenjualanInput();
-    }
-}
-
 // ---------- EVENT LISTENER ----------
 document.addEventListener('click', function(e) {
     const th = e.target.closest('.sortable');
@@ -2182,7 +2059,6 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.kebab-btn') && !e.target.closest('[onclick*="toggleKebabMenu"]')) {
         document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
