@@ -11,7 +11,7 @@ let bbSortKey = 'nama', bbSortOrder = 'asc';
 let summarySortKey = 'nama';
 let summarySortAsc = true;
 let cachedResepSummaryData = [];
-let penjualanInputData = {}; // { id: { qty, harga_jual } }
+let penjualanInputData = {};
 
 let currentUser = null;
 let appSettings = {
@@ -19,6 +19,65 @@ let appSettings = {
   overhead_type: 'nominal',
   overhead_value: 0
 };
+
+// ===== TEMA =====
+let currentTheme = 'light'; // 'light', 'dark', 'auto'
+
+function applyTheme(theme) {
+    const html = document.documentElement;
+    if (theme === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.classList.toggle('dark', prefersDark);
+        currentTheme = 'auto';
+        document.getElementById('theme-status').innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Otomatis (${prefersDark ? 'Gelap' : 'Terang'})</span>`;
+    } else if (theme === 'dark') {
+        html.classList.add('dark');
+        currentTheme = 'dark';
+        document.getElementById('theme-status').innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Gelap</span>`;
+    } else {
+        html.classList.remove('dark');
+        currentTheme = 'light';
+        document.getElementById('theme-status').innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Terang</span>`;
+    }
+    // Simpan preferensi
+    try { localStorage.setItem('preferred-theme', theme); } catch(e) {}
+}
+
+function setTheme(theme) {
+    applyTheme(theme);
+    // Highlight tombol yang aktif
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+        btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+    });
+    const btnMap = { light: 0, dark: 1, auto: 2 };
+    const btns = document.querySelectorAll('.theme-btn');
+    if (btns[btnMap[theme]]) {
+        const btn = btns[btnMap[theme]];
+        btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+        btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+    }
+}
+
+function loadTheme() {
+    let theme = 'light';
+    try { theme = localStorage.getItem('preferred-theme') || 'light'; } catch(e) {}
+    applyTheme(theme);
+    // Highlight tombol
+    const btnMap = { light: 0, dark: 1, auto: 2 };
+    const btns = document.querySelectorAll('.theme-btn');
+    if (btns[btnMap[theme]]) {
+        const btn = btns[btnMap[theme]];
+        btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+        btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+    }
+    // Listener perubahan sistem
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (currentTheme === 'auto') {
+            applyTheme('auto');
+        }
+    });
+}
 
 // ---------- HELPERS ----------
 const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(angka);
@@ -96,10 +155,10 @@ function updateOverheadStatusBadge() {
             ? `${appSettings.overhead_value}% / porsi`
             : `${formatRp(appSettings.overhead_value)} / porsi`;
         badge.innerHTML = `✅ Tersimpan: ${display}`;
-        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-emerald-50 text-emerald-700 border-emerald-200 shadow-sm whitespace-nowrap';
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap';
     } else {
         badge.innerHTML = `⚪ Belum diatur`;
-        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-gray-50 text-gray-500 border-gray-200 shadow-sm whitespace-nowrap';
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 shadow-sm whitespace-nowrap';
     }
 }
 
@@ -354,14 +413,14 @@ function updateUIByRole() {
     const mobileMenuList = document.getElementById('mobile-menu-list');
     mobileMenuList.innerHTML = '';
     const statusDiv = document.createElement('div');
-    statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100';
+    statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100 dark:border-gray-700';
     const statusSpan = document.createElement('span');
-    statusSpan.className = 'text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg text-center shadow-inner';
+    statusSpan.className = 'text-sm font-bold text-[#FF3B30] bg-[#FF3B30]/10 border border-[#FF3B30]/20 px-3 py-2 rounded-lg text-center shadow-inner';
     statusSpan.innerText = isLoggedIn ? `🌟 ${role.toUpperCase()} (${currentUser.email})` : '👤 Guest';
     statusDiv.appendChild(statusSpan);
     if (isLoggedIn) {
         const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
+        logoutBtn.className = 'bg-[#FF3B30] text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
         logoutBtn.innerText = 'Logout Admin';
         logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
         statusDiv.appendChild(logoutBtn);
@@ -369,7 +428,7 @@ function updateUIByRole() {
     mobileMenuList.appendChild(statusDiv);
     allowed.forEach(id => {
         const btn = document.createElement('button');
-        btn.className = `btn-tab-mobile text-gray-600 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 transition-colors ${id === firstTab ? 'bg-blue-50 text-blue-700 font-bold' : ''}`;
+        btn.className = `btn-tab-mobile text-gray-600 dark:text-gray-300 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${id === firstTab ? 'bg-blue-50 dark:bg-blue-900/20 text-[#FF3B30] font-bold' : ''}`;
         btn.innerText = tabNames[id] || id;
         btn.onclick = () => { switchTab(id); toggleMobileMenu(); };
         mobileMenuList.appendChild(btn);
@@ -386,10 +445,10 @@ function updateUIByRole() {
     const userStatus = document.getElementById('user-status');
     if (isLoggedIn) {
         userStatus.innerHTML = `🌟 ${role.toUpperCase()}`;
-        userStatus.className = 'text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full shadow-inner border border-blue-200';
+        userStatus.className = 'text-xs font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-1.5 rounded-full shadow-inner border border-[#FF3B30]/20';
     } else {
         userStatus.innerHTML = '👤 Guest';
-        userStatus.className = 'text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full shadow-inner border border-gray-200';
+        userStatus.className = 'text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full shadow-inner border border-gray-200 dark:border-gray-600';
     }
 
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
@@ -445,6 +504,7 @@ function switchTab(tabId) {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         }
         updateOverheadStatusBadge();
+        loadTheme(); // Pastikan tema di-render
     }
     if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
     if (tabId === 'tab-input') { loadDropdownBahanBaku('baru'); switchInputSubTab('hpp'); }
@@ -455,7 +515,6 @@ function switchTab(tabId) {
         setTimeout(updateDashboardEngineering, 500);
     }
     if (tabId === 'tab-input') {
-        // Pastikan subtab penjualan merender tabel
         if (document.getElementById('subtab-penjualan') && !document.getElementById('subtab-penjualan').classList.contains('hidden')) {
             renderTablePenjualanInput();
         }
@@ -524,18 +583,18 @@ function renderTabelBahanBaku() {
         pageData.forEach(item => {
             const canEdit = hasRole('admin');
             tbody.innerHTML += `
-            <tr class="border-b border-gray-100 hover:bg-blue-50/30 transition-colors relative">
-                <td class="p-4 font-bold text-gray-700 truncate max-w-xs border-r">${item.nama}</td>
-                <td class="p-3 border-l text-gray-500 bg-gray-50/50">${item.satuan_beli || '-'}</td>
-                <td class="p-3 border-r font-semibold text-gray-700 bg-gray-50/50">${item.harga_beli ? formatRp(item.harga_beli) : '-'}</td>
-                <td class="p-3 text-gray-500">${item.nilai_konversi || 1} ${item.satuan}</td>
-                <td class="p-3 text-blue-700 font-black">${formatRp(item.harga)} <span class="text-xs text-gray-400 font-normal">/ ${item.satuan}</span></td>
-                <td class="p-3 text-center border-l ${canEdit ? '' : 'hidden'}">
+            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors relative">
+                <td class="p-4 font-bold text-gray-700 dark:text-gray-300 truncate max-w-xs border-r dark:border-gray-700">${item.nama}</td>
+                <td class="p-3 border-l text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">${item.satuan_beli || '-'}</td>
+                <td class="p-3 border-r font-semibold text-gray-700 dark:text-gray-300 bg-gray-50/50 dark:bg-gray-800/50">${item.harga_beli ? formatRp(item.harga_beli) : '-'}</td>
+                <td class="p-3 text-gray-500 dark:text-gray-400">${item.nilai_konversi || 1} ${item.satuan}</td>
+                <td class="p-3 text-[#FF3B30] font-black">${formatRp(item.harga)} <span class="text-xs text-gray-400 dark:text-gray-500 font-normal">/ ${item.satuan}</span></td>
+                <td class="p-3 text-center border-l dark:border-gray-700 ${canEdit ? '' : 'hidden'}">
                     <div class="relative inline-block">
-                        <button onclick="toggleKebabMenu(event, 'drop-bb-${item.id}')" class="kebab-btn bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors">⋮</button>
-                        <div id="drop-bb-${item.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-32 py-2 text-sm text-gray-700 z-[70] overflow-hidden">
-                            <button onclick="bukaModalEditBB(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
-                            <button onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100 mt-1">🗑️ Hapus</button>
+                        <button onclick="toggleKebabMenu(event, 'drop-bb-${item.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                        <div id="drop-bb-${item.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-32 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden">
+                            <button onclick="bukaModalEditBB(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit</button>
+                            <button onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700 mt-1">🗑️ Hapus</button>
                         </div>
                     </div>
                 </td>
@@ -545,16 +604,16 @@ function renderTabelBahanBaku() {
     document.getElementById('bb-info-halaman').innerText = `Menampilkan ${totalData > 0 ? startIndex + 1 : 0} - ${Math.min(endIndex, totalData)} dari ${totalData} data`;
     let btnHTML = '';
     if (!isAll && totalPages > 1) {
-        btnHTML += `<button onclick="ubahHalamanBB(${Math.max(1, bbCurrentPage - 1)})" class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 font-medium ${bbCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">Prev</button>`;
+        btnHTML += `<button onclick="ubahHalamanBB(${Math.max(1, bbCurrentPage - 1)})" class="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium ${bbCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">Prev</button>`;
         for (let i = 1; i <= totalPages; i++) {
             if (i === bbCurrentPage || i === 1 || i === totalPages || (i >= bbCurrentPage - 1 && i <= bbCurrentPage + 1)) {
-                let active = i === bbCurrentPage ? 'bg-blue-600 text-white border-blue-600 shadow' : 'hover:bg-gray-100 text-gray-700 border-gray-200';
+                let active = i === bbCurrentPage ? 'bg-[#FF3B30] text-white border-[#FF3B30] shadow' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700';
                 btnHTML += `<button onclick="ubahHalamanBB(${i})" class="px-3 py-1.5 border rounded-lg font-medium ${active}">${i}</button>`;
             } else if (i === 2 || i === totalPages - 1) {
                 btnHTML += `<span class="px-2 text-gray-400">...</span>`;
             }
         }
-        btnHTML += `<button onclick="ubahHalamanBB(${Math.min(totalPages, bbCurrentPage + 1)})" class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 font-medium ${bbCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">Next</button>`;
+        btnHTML += `<button onclick="ubahHalamanBB(${Math.min(totalPages, bbCurrentPage + 1)})" class="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium ${bbCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">Next</button>`;
     }
     document.getElementById('bb-pagination-controls').innerHTML = btnHTML;
 }
@@ -667,15 +726,15 @@ function renderTabelManajemenKategori() {
     if (!ulKat || !ulSub) return;
     const canEdit = hasRole('senior_bar');
     const generateHTML = (list, jenis) => {
-        if (list.length === 0) return `<li class="text-sm text-gray-400 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
+        if (list.length === 0) return `<li class="text-sm text-gray-400 dark:text-gray-500 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
         return list.map(k => `
-            <li class="flex justify-between items-center bg-gray-50 border border-gray-100 p-3 rounded-lg relative hover:bg-white transition-colors">
-                <span class="font-semibold text-gray-700 truncate pr-4">${k.nama}</span>
-                ${canEdit ? `<div class="relative"><button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors kebab-btn">⋮</button>
-                <div id="drop-kat-${k.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-44 py-2 text-sm text-gray-700 z-50 overflow-hidden">
-                    <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit Nama</button>
-                    <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-green-50 font-bold text-green-600 border-b border-gray-100">➕ Tambahkan Menu</button>
-                    <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 mt-1">🗑️ Hapus Master</button>
+            <li class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 p-3 rounded-lg relative hover:bg-white dark:hover:bg-gray-600 transition-colors">
+                <span class="font-semibold text-gray-700 dark:text-gray-300 truncate pr-4">${k.nama}</span>
+                ${canEdit ? `<div class="relative"><button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="bg-white dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors kebab-btn">⋮</button>
+                <div id="drop-kat-${k.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-44 py-2 text-sm text-gray-700 dark:text-gray-300 z-50 overflow-hidden">
+                    <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit Nama</button>
+                    <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 font-bold text-green-600 dark:text-green-400 border-b border-gray-100 dark:border-gray-700">➕ Tambahkan Menu</button>
+                    <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 mt-1">🗑️ Hapus Master</button>
                 </div></div>` : ''}
             </li>
         `).join('');
@@ -789,17 +848,17 @@ function renderAssignMenuList() {
         const isChecked = isAlreadyInTarget ? 'checked disabled' : '';
         let badgeHTML = '';
         if (isAlreadyInTarget) {
-            badgeHTML = `<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded border border-green-200">Sudah Masuk Kategori Ini</span>`;
+            badgeHTML = `<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded border border-green-200 dark:border-green-800">Sudah Masuk Kategori Ini</span>`;
         } else if (currentVal !== 'Uncategorized' && currentVal !== '-') {
-            badgeHTML = `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded border border-amber-200 max-w-[120px] truncate">Saat ini: ${currentVal}</span>`;
+            badgeHTML = `<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-[120px] truncate">Saat ini: ${currentVal}</span>`;
         } else {
-            badgeHTML = `<span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded border border-gray-300">Uncategorized</span>`;
+            badgeHTML = `<span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600">Uncategorized</span>`;
         }
         listContainer.innerHTML += `
-            <label class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 cursor-pointer transition-colors ${isAlreadyInTarget ? 'opacity-60' : ''}">
+            <label class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors ${isAlreadyInTarget ? 'opacity-60' : ''}">
                 <div class="flex items-center gap-3">
-                    <input type="checkbox" class="assign-checkbox w-5 h-5 text-blue-600 rounded focus:ring-blue-500" value="${menu.id}" data-current="${currentVal}" ${isChecked}>
-                    <span class="font-bold text-gray-700">${menu.nama}</span>
+                    <input type="checkbox" class="assign-checkbox w-5 h-5 text-[#FF3B30] rounded focus:ring-[#FF3B30]" value="${menu.id}" data-current="${currentVal}" ${isChecked}>
+                    <span class="font-bold text-gray-700 dark:text-gray-300">${menu.nama}</span>
                 </div>
                 ${badgeHTML}
             </label>
@@ -852,10 +911,10 @@ async function loadDropdownBahanBaku(targetElement) {
     const ul = document.getElementById(prefix + 'dropdown-list');
     ul.innerHTML = '';
     if (bahanBakuList.length === 0) {
-        ul.innerHTML = '<li class="p-4 text-gray-400 text-sm italic text-center">Belum ada bahan di database</li>';
+        ul.innerHTML = '<li class="p-4 text-gray-400 dark:text-gray-500 text-sm italic text-center">Belum ada bahan di database</li>';
     } else {
         bahanBakuList.forEach(bb => {
-            ul.innerHTML += `<li class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 text-sm bb-item flex justify-between items-center transition-colors" onclick="pilihBahanBaku('${targetElement}', '${bb.id}', '${bb.nama.replace(/'/g, "\\'")}', ${bb.harga}, '${bb.satuan}')"><div class="font-bold text-gray-700">${bb.nama}</div><div class="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-md">${formatRp(bb.harga)} <span class="text-gray-500 font-normal">/ ${bb.satuan}</span></div></li>`;
+            ul.innerHTML += `<li class="p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm bb-item flex justify-between items-center transition-colors" onclick="pilihBahanBaku('${targetElement}', '${bb.id}', '${bb.nama.replace(/'/g, "\\'")}', ${bb.harga}, '${bb.satuan}')"><div class="font-bold text-gray-700 dark:text-gray-300">${bb.nama}</div><div class="text-xs font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-2.5 py-1 rounded-md">${formatRp(bb.harga)} <span class="text-gray-500 dark:text-gray-400 font-normal">/ ${bb.satuan}</span></div></li>`;
         });
     }
 }
@@ -920,16 +979,16 @@ function renderKomposisi(mode) {
     tbody.innerHTML = '';
     dataArr.forEach((item, idx) => {
         tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="p-3 font-semibold text-gray-700">${item.nama}</td>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="p-3 font-semibold text-gray-700 dark:text-gray-300">${item.nama}</td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-1">
-                        <input type="number" step="any" value="${item.qty}" class="w-20 p-1 border border-gray-300 rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-blue-400" oninput="directUpdateQtyKomposisi('${mode}', ${idx}, this.value)" />
-                        <span class="text-xs font-bold text-gray-400">${item.satuan}</span>
+                        <input type="number" step="any" value="${item.qty}" class="w-20 p-1 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-[#FF3B30] dark:bg-gray-700 dark:text-white" oninput="directUpdateQtyKomposisi('${mode}', ${idx}, this.value)" />
+                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500">${item.satuan}</span>
                     </div>
                 </td>
-                <td class="p-3 text-blue-600 font-bold text-right" id="${prefix}subtotal-cell-${idx}">${formatRp(item.subtotal)}</td>
-                <td class="p-3 text-center"><button onclick="removeTempKomposisi('${mode}', ${idx})" class="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors font-bold text-lg leading-none">×</button></td>
+                <td class="p-3 text-[#FF3B30] font-bold text-right" id="${prefix}subtotal-cell-${idx}">${formatRp(item.subtotal)}</td>
+                <td class="p-3 text-center"><button onclick="removeTempKomposisi('${mode}', ${idx})" class="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-lg transition-colors font-bold text-lg leading-none">×</button></td>
             </tr>
         `;
     });
@@ -1054,7 +1113,7 @@ async function loadDirektori() {
         (menu.resep_detail || []).forEach(det => {
             if (det.bahan_baku) {
                 totalBiayaBahan += det.qty * det.bahan_baku.harga;
-                komposisiHTML += `<li class="flex justify-between items-start text-[15px] py-1.5 border-b border-gray-100 last:border-0"><span class="text-gray-600 font-medium pr-4 break-words w-2/3 leading-snug">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 whitespace-nowrap text-right w-1/3">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
+                komposisiHTML += `<li class="flex justify-between items-start text-[15px] py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"><span class="text-gray-600 dark:text-gray-400 font-medium pr-4 break-words w-2/3 leading-snug">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap text-right w-1/3">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
             }
         });
         const currentYield = menu.yield || 1;
@@ -1081,7 +1140,6 @@ async function loadDirektori() {
     if (document.getElementById('tab-dashboard').classList.contains('active')) {
         updateDashboardEngineering();
     }
-    // Update tabel penjualan input jika subtab penjualan aktif
     if (document.getElementById('subtab-penjualan') && !document.getElementById('subtab-penjualan').classList.contains('hidden')) {
         renderTablePenjualanInput();
     }
@@ -1096,7 +1154,7 @@ function renderCatalogDirektori() {
     if (searchKey) processedData = processedData.filter(m => m.nama.toLowerCase().includes(searchKey) || (m.kategori && m.kategori.toLowerCase().includes(searchKey)) || (m.sub_kategori && m.sub_kategori.toLowerCase().includes(searchKey)));
     const wrapper = document.getElementById('recipe-wrapper');
     wrapper.innerHTML = '';
-    if (processedData.length === 0) { wrapper.innerHTML = `<div class="w-full text-center py-20 text-gray-400 italic">Data resep menu kosong atau tidak ditemukan.</div>`; return; }
+    if (processedData.length === 0) { wrapper.innerHTML = `<div class="w-full text-center py-20 text-gray-400 dark:text-gray-500 italic">Data resep menu kosong atau tidak ditemukan.</div>`; return; }
     const groupedData = {};
     processedData.forEach(menu => {
         const kat = menu.kategori && menu.kategori !== '-' ? menu.kategori.toUpperCase() : 'UNCATEGORIZED';
@@ -1107,29 +1165,29 @@ function renderCatalogDirektori() {
     });
     const canEdit = hasRole('senior_bar');
     Object.keys(groupedData).sort().forEach(kat => {
-        let html = `<div class="mb-12"><h2 class="text-3xl font-black text-gray-800 mb-6 border-b-4 border-blue-600 inline-block pr-8 pb-1 tracking-tight uppercase">${kat}</h2>`;
+        let html = `<div class="mb-12"><h2 class="text-3xl font-black text-gray-800 dark:text-white mb-6 border-b-4 border-[#FF3B30] inline-block pr-8 pb-1 tracking-tight uppercase">${kat}</h2>`;
         Object.keys(groupedData[kat]).sort().forEach(sub => {
             const cardBgColor = getCardGradient(sub);
-            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 mb-5 flex items-center"><span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
+            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-5 flex items-center"><span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
             groupedData[kat][sub].forEach(menu => {
                 let hppColor = menu.hppPersen > appSettings.hpp_limit ? 'text-red-500' : 'text-emerald-600';
                 let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-600';
                 let ovhText = '';
                 if (menu.overheadValue > 0) {
                     if (menu.overheadType === 'persen') {
-                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${menu.overheadValue}% dari HPP bahan</div>`;
+                        ovhText = `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">+ Overhead: ${menu.overheadValue}% dari HPP bahan</div>`;
                     } else {
-                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${formatRp(menu.overhead)}</div>`;
+                        ovhText = `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">+ Overhead: ${formatRp(menu.overhead)}</div>`;
                     }
                 }
                 html += `
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
                         ${canEdit ? `<div class="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="toggleKebabMenu(event, 'drop-r-${menu.id}')" class="kebab-btn bg-white/90 backdrop-blur hover:bg-white text-gray-800 w-8 h-8 rounded-lg font-bold shadow-md border border-gray-200">⋮</button>
-                            <div id="drop-r-${menu.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-30">
-                                <button onclick="bukaModalEditResep(${JSON.stringify(menu).replace(/"/g, '&quot;')})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
-                                <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 hover:bg-amber-50 font-bold text-amber-600">📋 Duplicate</button>
-                                <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100">🗑️ Hapus</button>
+                            <button onclick="toggleKebabMenu(event, 'drop-r-${menu.id}')" class="kebab-btn bg-white/90 dark:bg-gray-700/90 backdrop-blur hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 w-8 h-8 rounded-lg font-bold shadow-md border border-gray-200 dark:border-gray-600">⋮</button>
+                            <div id="drop-r-${menu.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-30">
+                                <button onclick="bukaModalEditResep(${JSON.stringify(menu).replace(/"/g, '&quot;')})" class="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit</button>
+                                <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 font-bold text-amber-600 dark:text-amber-400">📋 Duplicate</button>
+                                <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700">🗑️ Hapus</button>
                             </div>
                         </div>` : ''}
                         <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl relative">
@@ -1137,18 +1195,18 @@ function renderCatalogDirektori() {
                             <div class="absolute bottom-5 right-5 text-xs font-semibold bg-white/20 px-2 py-1 rounded backdrop-blur">YIELD: ${menu.yield}</div>
                         </div>
                         <div class="p-5 md:p-6 flex-grow flex flex-col">
-                            <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 italic">Tanpa komposisi</li>'}</ul>
-                            <div class="bg-gray-50 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 mt-auto">
-                                <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">Harga Jual:</span><span class="font-bold text-gray-800">${formatRp(menu.harga_jual)}</span></div>
-                                <div class="flex justify-between items-start border-t border-gray-200 pt-2">
-                                    <span class="text-gray-500 font-medium">HPP / Porsi:</span>
+                            <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 dark:text-gray-500 italic">Tanpa komposisi</li>'}</ul>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 dark:border-gray-600 mt-auto">
+                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">Harga Jual:</span><span class="font-bold text-gray-800 dark:text-gray-200">${formatRp(menu.harga_jual)}</span></div>
+                                <div class="flex justify-between items-start border-t border-gray-200 dark:border-gray-600 pt-2">
+                                    <span class="text-gray-500 dark:text-gray-400 font-medium">HPP / Porsi:</span>
                                     <div class="text-right">
-                                        <span class="font-bold text-gray-800 block">${formatRp(menu.totalCost)}</span>
+                                        <span class="font-bold text-gray-800 dark:text-gray-200 block">${formatRp(menu.totalCost)}</span>
                                         ${ovhText}
                                     </div>
                                 </div>
-                                <div class="flex justify-between items-center border-t border-gray-200 pt-2"><span class="text-gray-500 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
-                                <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">% HPP:</span><span class="font-black text-lg ${hppColor}">${menu.hppPersen.toFixed(2)}%</span></div>
+                                <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-600 pt-2"><span class="text-gray-500 dark:text-gray-400 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
+                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">% HPP:</span><span class="font-black text-lg ${hppColor}">${menu.hppPersen.toFixed(2)}%</span></div>
                             </div>
                         </div>
                     </div>
@@ -1181,7 +1239,7 @@ function renderTableSummary() {
     });
     tbody.innerHTML = '';
     if (sData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 italic">Tidak ada resep data summary.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada resep data summary.</td></tr>`;
         return;
     }
     const canEditResep = hasRole('senior_bar');
@@ -1196,37 +1254,37 @@ function renderTableSummary() {
         else btnMassal.classList.add('hidden');
     }
     sData.forEach(m => {
-        let textHppColor = m.hppPersen > appSettings.hpp_limit ? 'text-red-600 font-black' : 'text-emerald-600 font-bold';
+        let textHppColor = m.hppPersen > appSettings.hpp_limit ? 'text-red-600 dark:text-red-400 font-black' : 'text-emerald-600 dark:text-emerald-400 font-bold';
         const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50 transition-colors';
+        row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors';
         let html = '';
         if (canEditResep) {
-            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="summary-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-400" value="${m.id}" /></td>`;
+            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="summary-checkbox rounded border-gray-300 text-[#FF3B30] focus:ring-[#FF3B30]" value="${m.id}" /></td>`;
         }
         html += `
-            <td class="p-4 font-bold text-gray-800">${m.nama}</td>
-            <td class="p-4 text-gray-600 text-xs font-semibold"><span class="bg-gray-100 border px-2 py-1 rounded-md">${m.kategori}</span></td>
-            <td class="p-4 text-gray-500 text-xs">${m.sub_kategori}</td>
-            <td class="p-4 text-right font-semibold text-gray-700">${formatRp(m.harga_jual)}</td>
-            <td class="p-4 text-right font-semibold text-blue-600">${formatRp(m.totalCost)}</td>
+            <td class="p-4 font-bold text-gray-800 dark:text-gray-200">${m.nama}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400 text-xs font-semibold"><span class="bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 px-2 py-1 rounded-md">${m.kategori}</span></td>
+            <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${m.sub_kategori}</td>
+            <td class="p-4 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(m.harga_jual)}</td>
+            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(m.totalCost)}</td>
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
-            <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500':'text-emerald-600'}">${formatRp(m.margin)}</td>
+            <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500 dark:text-red-400':'text-emerald-600 dark:text-emerald-400'}">${formatRp(m.margin)}</td>
         `;
         html += `<td class="p-4 text-center"><div class="relative inline-block">`;
         if (canEditResep) {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-[70] overflow-hidden">
-                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
-                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-t border-gray-100">📝 Edit</button>
-                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100 mt-1">🗑️ Hapus</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden">
+                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">ℹ️ Info</button>
+                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400 border-t border-gray-100 dark:border-gray-700">📝 Edit</button>
+                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700 mt-1">🗑️ Hapus</button>
                 </div>
             `;
         } else {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-[70] overflow-hidden">
-                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden">
+                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">ℹ️ Info</button>
                 </div>
             `;
         }
@@ -1318,12 +1376,12 @@ function renderDashboardAnalitika() {
     const topMarginBody = document.getElementById('dash-top-margin');
     let marginSorted = [...cachedResepSummaryData].sort((a, b) => b.margin - a.margin).slice(0, 5);
     topMarginBody.innerHTML = '';
-    if (marginSorted.length === 0) topMarginBody.innerHTML = `<tr><td class="text-center p-4 italic text-gray-400">Data menu belum siap.</td></tr>`;
+    if (marginSorted.length === 0) topMarginBody.innerHTML = `<tr><td class="text-center p-4 italic text-gray-400 dark:text-gray-500">Data menu belum siap.</td></tr>`;
     marginSorted.forEach(m => {
         topMarginBody.innerHTML += `
             <tr class="py-2 flex justify-between items-center text-sm">
-                <td class="font-bold text-gray-700">${m.nama}</td>
-                <td class="font-black text-emerald-600 text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400">profit</span></td>
+                <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
+                <td class="font-black text-emerald-600 dark:text-emerald-400 text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">profit</span></td>
             </tr>
         `;
     });
@@ -1331,13 +1389,13 @@ function renderDashboardAnalitika() {
     let criticalSorted = cachedResepSummaryData.filter(m => m.hppPersen > appSettings.hpp_limit).sort((a, b) => b.hppPersen - a.hppPersen);
     criticalBody.innerHTML = '';
     if (criticalSorted.length === 0) {
-        criticalBody.innerHTML = `<tr><td class="p-4 text-center text-xs text-emerald-600 font-bold bg-emerald-50 rounded-xl border border-emerald-100">✨ Selamat! Seluruh resep terkendali aman di bawah threshold ${appSettings.hpp_limit}%.</td></tr>`;
+        criticalBody.innerHTML = `<tr><td class="p-4 text-center text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">✨ Selamat! Seluruh resep terkendali aman di bawah threshold ${appSettings.hpp_limit}%.</td></tr>`;
     } else {
         criticalSorted.forEach(m => {
             criticalBody.innerHTML += `
                 <tr class="py-2 flex justify-between items-center text-sm">
-                    <td class="font-bold text-gray-700">${m.nama}</td>
-                    <td class="font-black text-red-600 text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400">HPP</span></td>
+                    <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
+                    <td class="font-black text-red-600 dark:text-red-400 text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400 dark:text-gray-500">HPP</span></td>
                 </tr>
             `;
         });
@@ -1662,14 +1720,12 @@ function renderTablePenjualanInput() {
     if (filterKat !== 'all') {
         menus = menus.filter(m => m.kategori === filterKat);
     }
-    // Kelompokkan per sub kategori
     const grouped = {};
     menus.forEach(menu => {
         const sub = menu.sub_kategori || 'Uncategorized';
         if (!grouped[sub]) grouped[sub] = [];
         grouped[sub].push(menu);
     });
-    // Inisialisasi penjualanInputData
     menus.forEach(menu => {
         if (!penjualanInputData[menu.id]) {
             penjualanInputData[menu.id] = { qty: '', harga_jual: menu.harga_jual || 0 };
@@ -1677,28 +1733,28 @@ function renderTablePenjualanInput() {
     });
     tbody.innerHTML = '';
     if (menus.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 italic">Tidak ada menu untuk kategori ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada menu untuk kategori ini.</td></tr>`;
         return;
     }
     Object.keys(grouped).sort().forEach(sub => {
-        tbody.innerHTML += `<tr class="bg-gray-50"><td colspan="5" class="p-2 font-bold text-gray-700 border-b-2 border-gray-200">📂 ${sub}</td></tr>`;
+        tbody.innerHTML += `<tr class="bg-gray-50 dark:bg-gray-700/50"><td colspan="5" class="p-2 font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">📂 ${sub}</td></tr>`;
         grouped[sub].forEach(menu => {
             const data = penjualanInputData[menu.id] || { qty: '', harga_jual: menu.harga_jual || 0 };
             tbody.innerHTML += `
-                <tr class="border-b border-gray-100 hover:bg-blue-50/30 transition-colors">
-                    <td class="p-3 font-semibold text-gray-700">${menu.nama}</td>
-                    <td class="p-3 text-gray-600 text-sm">${menu.kategori}</td>
-                    <td class="p-3 text-gray-500 text-sm">${menu.sub_kategori || '-'}</td>
+                <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
+                    <td class="p-3 font-semibold text-gray-700 dark:text-gray-300">${menu.nama}</td>
+                    <td class="p-3 text-gray-600 dark:text-gray-400 text-sm">${menu.kategori}</td>
+                    <td class="p-3 text-gray-500 dark:text-gray-400 text-sm">${menu.sub_kategori || '-'}</td>
                     <td class="p-3 text-center">
                         <input type="number" min="0" step="1" value="${data.qty}" 
-                            class="w-24 p-1.5 border border-gray-300 rounded-lg text-center text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                            class="w-24 p-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-sm focus:ring-2 focus:ring-[#FF3B30] outline-none dark:bg-gray-700 dark:text-white"
                             oninput="updatePenjualanInput(${menu.id}, 'qty', this.value)" />
                     </td>
                     <td class="p-3 text-right">
                         <div class="flex justify-end items-center gap-1">
-                            <span class="text-xs text-gray-500">Rp</span>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Rp</span>
                             <input type="text" value="${data.harga_jual ? new Intl.NumberFormat('id-ID').format(data.harga_jual) : ''}" 
-                                class="w-32 p-1.5 border border-gray-300 rounded-lg text-right text-sm focus:ring-2 focus:ring-blue-400 outline-none"
+                                class="w-32 p-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-right text-sm focus:ring-2 focus:ring-[#FF3B30] outline-none dark:bg-gray-700 dark:text-white"
                                 oninput="formatRupiahInput(this); updatePenjualanInput(${menu.id}, 'harga', this.value)" />
                         </div>
                     </td>
@@ -1727,7 +1783,6 @@ async function simpanPenjualanMassal() {
     if (!bulan || !tahun) {
         return alert('Pilih bulan dan tahun terlebih dahulu!');
     }
-    // Kumpulkan data yang memiliki qty > 0
     const dataToInsert = [];
     for (const [id, data] of Object.entries(penjualanInputData)) {
         const qty = parseInt(data.qty) || 0;
@@ -1745,7 +1800,6 @@ async function simpanPenjualanMassal() {
     if (dataToInsert.length === 0) {
         return alert('Tidak ada data penjualan yang valid (Qty > 0 dan Harga > 0).');
     }
-    // Cek duplikasi: apakah sudah ada data untuk bulan/tahun yang sama?
     const { data: existing } = await supabaseClient
         .from('penjualan')
         .select('resep_id')
@@ -1754,7 +1808,6 @@ async function simpanPenjualanMassal() {
     const existingIds = new Set(existing ? existing.map(e => e.resep_id) : []);
     const conflictIds = dataToInsert.filter(d => existingIds.has(d.resep_id)).map(d => d.resep_id);
     if (conflictIds.length > 0) {
-        // Ambil nama menu yang conflict
         const conflictMenus = cachedResepSummaryData
             .filter(m => conflictIds.includes(m.id))
             .map(m => m.nama)
@@ -1762,7 +1815,6 @@ async function simpanPenjualanMassal() {
         if (!confirm(`Data penjualan untuk bulan ${bulan}/${tahun} sudah ada untuk menu: ${conflictMenus}.\n\nSimpan akan menimpa data yang sudah ada. Lanjutkan?`)) {
             return;
         }
-        // Hapus data yang sudah ada untuk menu-menu tersebut
         await supabaseClient
             .from('penjualan')
             .delete()
@@ -1777,7 +1829,6 @@ async function simpanPenjualanMassal() {
         alert('Gagal menyimpan penjualan: ' + error.message);
     } else {
         alert(`Berhasil menyimpan ${dataToInsert.length} data penjualan!`);
-        // Reset qty setelah simpan
         for (const id of Object.keys(penjualanInputData)) {
             penjualanInputData[id].qty = '';
         }
@@ -1812,14 +1863,11 @@ function eksekusiImportPenjualan(mode) {
             const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
             const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
             if (rows.length === 0) { hideLoading(); alert("Data Excel kosong!"); batalImport(); return; }
-            // Ambil daftar menu dari database untuk mapping
             const { data: menus } = await supabaseClient.from('resep').select('id, nama, kategori, sub_kategori');
             const menuMap = {};
             menus.forEach(m => {
-                // Key: nama.toLowerCase() -> id
                 menuMap[m.nama.toLowerCase().trim()] = m.id;
             });
-            // Kumpulkan data penjualan per baris
             const dataToInsert = [];
             let skipped = 0;
             rows.forEach(r => {
@@ -1829,7 +1877,6 @@ function eksekusiImportPenjualan(mode) {
                 if (!namaMenu || qty <= 0 || harga <= 0) { skipped++; return; }
                 const menuId = menuMap[namaMenu.toLowerCase()];
                 if (!menuId) { skipped++; return; }
-                // Ambil bulan dan tahun dari filter
                 const bulan = parseInt(document.getElementById('jual-bulan').value);
                 const tahun = parseInt(document.getElementById('jual-tahun').value);
                 if (!bulan || !tahun) {
@@ -1850,7 +1897,6 @@ function eksekusiImportPenjualan(mode) {
                 batalImport();
                 return;
             }
-            // Cek duplikasi
             const bulan = parseInt(document.getElementById('jual-bulan').value);
             const tahun = parseInt(document.getElementById('jual-tahun').value);
             const { data: existing } = await supabaseClient
@@ -1893,7 +1939,6 @@ function eksekusiImportPenjualan(mode) {
 }
 
 function exportPenjualanToExcel() {
-    // Ekspor data berdasarkan filter yang sedang aktif
     const bulan = document.getElementById('filter-data-bulan').value;
     const tahun = document.getElementById('filter-data-tahun').value;
     const menuId = document.getElementById('filter-data-menu').value;
@@ -1953,7 +1998,7 @@ async function loadDataPenjualan() {
     const tbody = document.getElementById('table-penjualan-body');
     tbody.innerHTML = '';
     if (!data || data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 italic">Tidak ada data penjualan.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada data penjualan.</td></tr>`;
         return;
     }
     const canDelete = hasRole('senior_bar');
@@ -1966,22 +2011,22 @@ async function loadDataPenjualan() {
         const menu = row.resep;
         const total = row.qty * row.harga_jual;
         const bulanName = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][row.bulan - 1] || row.bulan;
-        let html = '<tr class="hover:bg-gray-50 transition-colors">';
+        let html = '<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">';
         if (canDelete) {
-            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="penjualan-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-400" value="${row.id}" /></td>`;
+            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="penjualan-checkbox rounded border-gray-300 text-[#FF3B30] focus:ring-[#FF3B30]" value="${row.id}" /></td>`;
         }
         html += `
-            <td class="p-4 font-bold text-gray-800">${menu?.nama || 'Menu dihapus'}</td>
-            <td class="p-4 text-gray-600">${menu?.kategori || '-'}</td>
+            <td class="p-4 font-bold text-gray-800 dark:text-gray-200">${menu?.nama || 'Menu dihapus'}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400">${menu?.kategori || '-'}</td>
             <td class="p-4">${bulanName}</td>
             <td class="p-4">${row.tahun}</td>
             <td class="p-4 text-right font-semibold">${row.qty}</td>
-            <td class="p-4 text-right font-semibold text-blue-600">${formatRp(row.harga_jual)}</td>
-            <td class="p-4 text-right font-bold text-gray-800">${formatRp(total)}</td>
+            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(row.harga_jual)}</td>
+            <td class="p-4 text-right font-bold text-gray-800 dark:text-gray-200">${formatRp(total)}</td>
             <td class="p-4 text-center">
         `;
         if (canDelete) {
-            html += `<button onclick="hapusPenjualan(${row.id})" class="text-red-500 hover:text-red-700 font-bold text-lg">✕</button>`;
+            html += `<button onclick="hapusPenjualan(${row.id})" class="text-red-500 dark:text-red-400 hover:text-red-700 font-bold text-lg">✕</button>`;
         } else {
             html += `<span class="text-gray-300">-</span>`;
         }
@@ -2028,7 +2073,7 @@ async function updateDashboardEngineering() {
     const bulan = document.getElementById('dash-filter-bulan').value;
     const tahun = document.getElementById('dash-filter-tahun').value;
     if (!bulan || !tahun) {
-        document.getElementById('dash-engineering-container').innerHTML = '<p class="text-gray-400 text-center py-10">Pilih bulan dan tahun untuk melihat data engineering.</p>';
+        document.getElementById('dash-engineering-container').innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-center py-10">Pilih bulan dan tahun untuk melihat data engineering.</p>';
         return;
     }
     const { data: penjualanData, error } = await supabaseClient
@@ -2063,16 +2108,16 @@ async function updateDashboardEngineering() {
     const container = document.getElementById('dash-engineering-container');
     container.innerHTML = '';
     if (Object.keys(kategoriMap).length === 0) {
-        container.innerHTML = '<p class="text-gray-400 text-center py-10">Belum ada kategori.</p>';
+        container.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-center py-10">Belum ada kategori.</p>';
         return;
     }
     Object.keys(kategoriMap).sort().forEach(kat => {
         const menusInKat = kategoriMap[kat];
         const avg = avgSalesPerKat[kat] || 0;
-        let html = `<div class="bg-gray-50 rounded-xl p-4 border border-gray-200">
-            <h4 class="font-bold text-lg text-gray-800 mb-3 flex items-center gap-2">
-                <span class="bg-blue-500 text-white px-3 py-1 rounded-full text-sm">${kat}</span>
-                <span class="text-sm font-normal text-gray-500">Rata-rata penjualan: ${avg.toFixed(1)} porsi</span>
+        let html = `<div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                <span class="bg-[#FF3B30] text-white px-3 py-1 rounded-full text-sm">${kat}</span>
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Rata-rata penjualan: ${avg.toFixed(1)} porsi</span>
             </h4>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         `;
@@ -2082,16 +2127,16 @@ async function updateDashboardEngineering() {
             const isEngineering = (qty < avg * 0.5) && avg > 0;
             const totalRevenue = sales?.totalHarga || 0;
             html += `
-                <div class="bg-white p-4 rounded-xl shadow-sm border ${isEngineering ? 'border-red-300 bg-red-50' : 'border-gray-100'}">
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border ${isEngineering ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : 'border-gray-100 dark:border-gray-700'}">
                     <div class="flex justify-between items-start">
-                        <span class="font-bold text-gray-700">${menu.nama}</span>
+                        <span class="font-bold text-gray-700 dark:text-gray-300">${menu.nama}</span>
                         ${isEngineering ? '<span class="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">🔧 Engineering</span>' : ''}
                     </div>
                     <div class="mt-2 space-y-1 text-sm">
-                        <div class="flex justify-between"><span class="text-gray-500">Qty Terjual</span><span class="font-bold">${qty}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">Total Revenue</span><span class="font-bold">${formatRp(totalRevenue)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">Margin / Porsi</span><span class="font-bold ${menu.margin < 0 ? 'text-red-600' : 'text-emerald-600'}">${formatRp(menu.margin)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500">% HPP</span><span class="font-bold ${menu.hppPersen > appSettings.hpp_limit ? 'text-red-500' : 'text-emerald-600'}">${menu.hppPersen.toFixed(1)}%</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Qty Terjual</span><span class="font-bold">${qty}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Total Revenue</span><span class="font-bold">${formatRp(totalRevenue)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Margin / Porsi</span><span class="font-bold ${menu.margin < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatRp(menu.margin)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">% HPP</span><span class="font-bold ${menu.hppPersen > appSettings.hpp_limit ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${menu.hppPersen.toFixed(1)}%</span></div>
                     </div>
                 </div>
             `;
@@ -2146,9 +2191,9 @@ document.addEventListener('click', function(e) {
 
 // ---------- ON LOAD ----------
 window.onload = async () => {
+    loadTheme();
     await inisialisasiAuth();
     await loadKategoriDB();
-    // Set default filter data penjualan
     const bulanNow = new Date().getMonth() + 1;
     const tahunNow = new Date().getFullYear();
     document.getElementById('filter-data-bulan').value = bulanNow;
