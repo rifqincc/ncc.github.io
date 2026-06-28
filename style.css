@@ -230,6 +230,16 @@ input[type="number"]::-webkit-outer-spin-button {
     border-top-color: #374151;
 }
 
+/* ===== TEMA TERANG - PERBAIKAN KONTRAST ===== */
+body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.dark body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
 /* Dark mode overrides */
 .dark {
     background-color: #0f172a;
@@ -362,4 +372,93 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 .dark .bg-purple-50\/50 {
     background-color: rgba(30, 41, 59, 0.5);
+}
+
+/* Tema terang - perbaikan kontras */
+.bg-gray-50 {
+    background-color: #f8fafc;
+}
+.bg-gray-100 {
+    background-color: #f1f5f9;
+}
+.bg-gray-200 {
+    background-color: #e2e8f0;
+}
+.border-gray-100 {
+    border-color: #e2e8f0;
+}
+.border-gray-200 {
+    border-color: #cbd5e1;
+}
+.border-gray-300 {
+    border-color: #94a3b8;
+}
+.text-gray-400 {
+    color: #64748b;
+}
+.text-gray-500 {
+    color: #475569;
+}
+.text-gray-600 {
+    color: #334155;
+}
+.text-gray-700 {
+    color: #1e293b;
+}
+.text-gray-800 {
+    color: #0f172a;
+}
+.dark .text-gray-400 {
+    color: #94a3b8;
+}
+.dark .text-gray-500 {
+    color: #64748b;
+}
+.dark .text-gray-600 {
+    color: #94a3b8;
+}
+.dark .text-gray-700 {
+    color: #cbd5e1;
+}
+.dark .text-gray-800 {
+    color: #e2e8f0;
+}
+
+/* Card di tema terang */
+.bg-white {
+    background-color: #ffffff;
+}
+.dark .bg-white {
+    background-color: #1e293b;
+}
+
+/* Input di tema terang */
+input, select, textarea {
+    background-color: #ffffff;
+    border-color: #d1d5db;
+    color: #0f172a;
+}
+input:focus, select:focus, textarea:focus {
+    background-color: #ffffff;
+    border-color: #FF3B30;
+    outline: none;
+}
+.dark input, .dark select, .dark textarea {
+    background-color: #1e293b;
+    border-color: #475569;
+    color: #e2e8f0;
+}
+
+/* Tombol di tema terang */
+.btn-tab {
+    color: #64748b;
+}
+.btn-tab.active {
+    color: #FF3B30;
+}
+.dark .btn-tab {
+    color: #94a3b8;
+}
+.dark .btn-tab.active {
+    color: #FF3B30;
 }
