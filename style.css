@@ -1,4 +1,4 @@
-/* style.css */
+/* style.css - FULL VERSION with contrast fixes for light theme */
 .tab-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -505,4 +505,150 @@ input:focus, select:focus, textarea:focus {
 .dark #list-manajemen-sub-kategori .kebab-btn {
     background-color: #1e293b;
     border-color: #475569;
+}
+
+/* ===== PERBAIKAN KONTRAST TEMA TERANG - EKSTRA ===== */
+/* Pastikan semua teks di body gelap saat tema terang */
+body.light {
+    color: #0f172a !important;
+    background-color: #f1f5f9 !important;
+}
+
+/* Semua elemen teks dasar */
+.light .text-gray-400 {
+    color: #475569 !important;
+}
+.light .text-gray-500 {
+    color: #334155 !important;
+}
+.light .text-gray-600 {
+    color: #1e293b !important;
+}
+.light .text-gray-700 {
+    color: #0f172a !important;
+}
+.light .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Khusus untuk card resep di directory */
+.light .bg-white .text-gray-400,
+.light .bg-white .text-gray-500,
+.light .bg-white .text-gray-600,
+.light .bg-white .text-gray-700,
+.light .bg-white .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Komposisi bahan di card */
+.light #recipe-wrapper .text-gray-600 {
+    color: #1e293b !important;
+}
+.light #recipe-wrapper .text-gray-400 {
+    color: #475569 !important;
+}
+.light #recipe-wrapper .font-bold.text-gray-800 {
+    color: #0f172a !important;
+}
+.light #recipe-wrapper .font-medium.text-gray-500 {
+    color: #334155 !important;
+}
+
+/* Label dan teks di form */
+.light label,
+.light .block.text-sm,
+.light .text-xs.font-bold {
+    color: #1e293b !important;
+}
+
+/* Teks di tabel summary */
+.light #summary-table .text-gray-600,
+.light #summary-table .text-gray-500,
+.light #summary-table .text-gray-700,
+.light #summary-table .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Teks di dashboard */
+.light .text-gray-400.uppercase {
+    color: #475569 !important;
+}
+.light .text-gray-800 {
+    color: #0f172a !important;
+}
+.light .text-gray-700 {
+    color: #1e293b !important;
+}
+
+/* Input dan select */
+.light input,
+.light select,
+.light textarea {
+    color: #0f172a !important;
+    background-color: #ffffff !important;
+}
+.light input::placeholder {
+    color: #94a3b8 !important;
+}
+
+/* HPP card di dalam recipe */
+.light .bg-gray-50 .text-gray-500,
+.light .bg-gray-50 .text-gray-400,
+.light .bg-gray-50 .text-gray-600,
+.light .bg-gray-50 .text-gray-700,
+.light .bg-gray-50 .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Text di modal */
+.light .modal-enter .text-gray-500,
+.light .modal-enter .text-gray-600,
+.light .modal-enter .text-gray-700,
+.light .modal-enter .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Kategori dan sub kategori di directory */
+.light .bg-blue-50.text-blue-700 {
+    color: #1e3a5f !important;
+    background-color: #dbeafe !important;
+}
+.light .bg-blue-50.text-blue-700.border-blue-200 {
+    border-color: #93c5fd !important;
+}
+
+/* Teks "YIELD" di card */
+.light .bg-white\/20.text-white {
+    color: #ffffff !important;
+}
+
+/* Background card di tema terang */
+.light .bg-white {
+    background-color: #ffffff !important;
+}
+.light .bg-gray-50 {
+    background-color: #f8fafc !important;
+}
+.light .bg-gray-100 {
+    background-color: #f1f5f9 !important;
+}
+
+/* Dark mode juga tetap dipertahankan untuk elemen yang butuh */
+.dark .bg-white {
+    background-color: #1e293b !important;
+}
+.dark .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+.dark .text-gray-500 {
+    color: #64748b !important;
+}
+.dark .text-gray-400 {
+    color: #94a3b8 !important;
 }
