@@ -181,6 +181,7 @@ function toggleKebabMenu(event, menuId) {
     const targetMenu = document.getElementById(menuId);
     const isHidden = targetMenu.classList.contains('hidden');
     
+    // Tutup semua dropdown lain
     document.querySelectorAll('.dropdown-menu').forEach(menu => {
         menu.classList.add('hidden');
         menu.classList.remove('fixed-dropdown');
@@ -193,6 +194,7 @@ function toggleKebabMenu(event, menuId) {
         targetMenu.classList.remove('hidden');
         targetMenu.classList.add('fixed-dropdown');
         const rect = event.currentTarget.getBoundingClientRect();
+        // Tampilkan tepat di bawah tombol
         targetMenu.style.top = `${rect.bottom + window.scrollY + 4}px`;
         targetMenu.style.right = `${window.innerWidth - rect.right}px`;
         targetMenu.style.left = 'auto';
@@ -261,7 +263,6 @@ async function fetchUserRoleAndSettings(user) {
     hideLoginScreen();
     hideLoading();
     
-    // Restore tab state after UI is ready
     const savedTab = getSavedTab();
     if (savedTab && document.getElementById(savedTab)) {
         switchTab(savedTab);
@@ -464,7 +465,6 @@ function updateUIByRole() {
     }
     loadDirektori();
     
-    // Restore saved tab if it exists and is allowed
     const savedTab = getSavedTab();
     if (savedTab && allowed.includes(savedTab)) {
         switchTab(savedTab);
@@ -489,7 +489,6 @@ function switchTab(tabId) {
     });
     if (activeNav) activeNav.classList.add('active');
 
-    // Save tab state
     saveActiveTab(tabId);
 
     if (tabId === 'tab-settings') {
@@ -590,9 +589,11 @@ function renderTabelBahanBaku() {
                     <td class="p-3 text-center border-l ${canEdit ? '' : 'hidden'}">
                         <div class="relative inline-block">
                             <button onclick="toggleKebabMenu(event, 'drop-bb-${item.id}')" class="bg-gray-100 hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold transition-colors">⋮</button>
-                            <div id="drop-bb-${item.id}" class="bb-kebab-dropdown hidden">
-                                <button class="edit-btn" onclick="bukaModalEditBB(${itemJson})">📝 Edit</button>
-                                <button class="delete-btn" onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')">🗑️ Hapus</button>
+                            <div id="drop-bb-${item.id}" class="dropdown-menu hidden">
+                                <div class="bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 overflow-hidden">
+                                    <button onclick="bukaModalEditBB(${itemJson})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
+                                    <button onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100">🗑️ Hapus</button>
+                                </div>
                             </div>
                         </div>
                     </td>
@@ -1191,10 +1192,12 @@ function renderCatalogDirektori() {
                                 ${canEdit ? `
                                     <div class="kebab-wrapper">
                                         <button onclick="toggleKebabMenu(event, 'drop-r-${menu.id}')" class="kebab-btn">⋮</button>
-                                        <div id="drop-r-${menu.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-30 overflow-hidden">
-                                            <button onclick="bukaModalEditResep(${menuJson})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
-                                            <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 hover:bg-amber-50 font-bold text-amber-600">📋 Duplicate</button>
-                                            <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100">🗑️ Hapus</button>
+                                        <div id="drop-r-${menu.id}" class="dropdown-menu hidden" style="z-index:9999;">
+                                            <div class="bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 overflow-hidden">
+                                                <button onclick="bukaModalEditResep(${menuJson})" class="w-full text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">📝 Edit</button>
+                                                <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 hover:bg-amber-50 font-bold text-amber-600">📋 Duplicate</button>
+                                                <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100">🗑️ Hapus</button>
+                                            </div>
                                         </div>
                                     </div>
                                 ` : ''}
@@ -1280,17 +1283,21 @@ function renderTableSummary() {
         if (canEditResep) {
             html += `
                 <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-[70] overflow-hidden">
-                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
-                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-t border-gray-100">📝 Edit</button>
-                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100 mt-1">🗑️ Hapus</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden" style="z-index:9999;">
+                    <div class="bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 overflow-hidden">
+                        <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
+                        <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600 border-t border-gray-100">📝 Edit</button>
+                        <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 font-bold text-red-600 border-t border-gray-100 mt-1">🗑️ Hapus</button>
+                    </div>
                 </div>
             `;
         } else {
             html += `
                 <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white hover:bg-gray-200 text-gray-600 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 transition-colors">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-10 top-0 mt-1 bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 z-[70] overflow-hidden">
-                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden" style="z-index:9999;">
+                    <div class="bg-white shadow-xl rounded-xl border border-gray-100 w-36 py-2 text-sm text-gray-700 overflow-hidden">
+                        <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 font-bold text-blue-600">ℹ️ Info</button>
+                    </div>
                 </div>
             `;
         }
@@ -2214,7 +2221,6 @@ window.onload = async () => {
     document.getElementById('filter-data-bulan').value = bulanNow;
     document.getElementById('filter-data-tahun').value = tahunNow;
     
-    // Restore tab if already logged in
     const savedTab = getSavedTab();
     if (savedTab && document.getElementById(savedTab) && currentUser) {
         switchTab(savedTab);
