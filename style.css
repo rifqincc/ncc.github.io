@@ -1,4 +1,4 @@
-/* style.css - FULL VERSION with white text for selected elements */
+/* style.css - FULL VERSION with all fixes */
 .tab-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -1057,4 +1057,35 @@ body {
 .light #user-status {
     color: #FF3B30 !important;
     background-color: rgba(255, 59, 48, 0.1) !important;
+}
+
+/* ================================================================
+   ADDITIONAL FIX: Dark description text in light theme for header subtext
+   ================================================================ */
+.light .bg-gradient-to-r .text-sm.opacity-90 {
+    color: #0f172a !important;
+}
+/* Also any paragraph inside header */
+.light .bg-gradient-to-r p {
+    color: #0f172a !important;
+}
+/* But keep h2 white */
+.light .bg-gradient-to-r h2 {
+    color: #ffffff !important;
+}
+
+/* ================================================================
+   FIX: Text inside import/export sections (light theme)
+   ================================================================ */
+.light .bg-gradient-to-r.from-blue-50 p,
+.light .bg-gradient-to-r.from-purple-50 p,
+.light .bg-gradient-to-r.from-green-50 p,
+.light .bg-gradient-to-r.from-amber-50 p {
+    color: #0f172a !important;
+}
+.light .bg-gradient-to-r.from-blue-50 .text-blue-700,
+.light .bg-gradient-to-r.from-purple-50 .text-purple-700,
+.light .bg-gradient-to-r.from-green-50 .text-green-700,
+.light .bg-gradient-to-r.from-amber-50 .text-amber-700 {
+    color: #0f172a !important;
 }
