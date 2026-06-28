@@ -11,6 +11,7 @@ let bbSortKey = 'nama', bbSortOrder = 'asc';
 let summarySortKey = 'nama';
 let summarySortAsc = true;
 let cachedResepSummaryData = [];
+let penjualanInputData = {};
 
 let currentUser = null;
 let appSettings = {
@@ -18,10 +19,63 @@ let appSettings = {
   overhead_type: 'nominal',
   overhead_value: 0
 };
+let currentActiveTab = 'tab-direktori';
+
+// ===== TEMA =====
+let currentTheme = 'light';
+function applyTheme(theme) {
+    const html = document.documentElement;
+    if (theme === 'auto') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        html.classList.toggle('dark', prefersDark);
+        currentTheme = 'auto';
+        const status = document.getElementById('theme-status');
+        if (status) status.innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Otomatis (${prefersDark ? 'Gelap' : 'Terang'})</span>`;
+    } else if (theme === 'dark') {
+        html.classList.add('dark');
+        currentTheme = 'dark';
+        const status = document.getElementById('theme-status');
+        if (status) status.innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Gelap</span>`;
+    } else {
+        html.classList.remove('dark');
+        currentTheme = 'light';
+        const status = document.getElementById('theme-status');
+        if (status) status.innerHTML = `Tema aktif: <span class="font-bold text-[#FF3B30]">Terang</span>`;
+    }
+    try { localStorage.setItem('preferred-theme', theme); } catch(e) {}
+}
+function setTheme(theme) {
+    applyTheme(theme);
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+        btn.classList.add('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+    });
+    const btnMap = { light: 0, dark: 1, auto: 2 };
+    const btns = document.querySelectorAll('.theme-btn');
+    if (btns[btnMap[theme]]) {
+        const btn = btns[btnMap[theme]];
+        btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+        btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+    }
+}
+function loadTheme() {
+    let theme = 'light';
+    try { theme = localStorage.getItem('preferred-theme') || 'light'; } catch(e) {}
+    applyTheme(theme);
+    const btnMap = { light: 0, dark: 1, auto: 2 };
+    const btns = document.querySelectorAll('.theme-btn');
+    if (btns[btnMap[theme]]) {
+        const btn = btns[btnMap[theme]];
+        btn.classList.remove('bg-white', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300', 'border-gray-300', 'dark:border-gray-600');
+        btn.classList.add('bg-[#FF3B30]', 'text-white', 'border-[#FF3B30]');
+    }
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (currentTheme === 'auto') applyTheme('auto');
+    });
+}
 
 // ---------- HELPERS ----------
 const formatRp = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(angka);
-
 function formatRupiahInput(element) {
     let val = element.value.replace(/[^,\d]/g, '').toString();
     let split = val.split(',');
@@ -35,43 +89,65 @@ function formatRupiahInput(element) {
     rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
     element.value = rupiah;
 }
-
 function getNilaiAsli(stringInput) {
     return parseFloat(String(stringInput).replace(/[^0-9]/g, '')) || 0;
 }
-
 function closeModal(modalId) {
     document.getElementById(modalId).classList.add('hidden');
 }
-
+function showToast(message, type = 'success') {
+    const container = document.getElementById('toast-container');
+    if (!container) { alert(message); return; }
+    const styles = { success: 'bg-emerald-600 border-emerald-800', error: 'bg-red-600 border-red-800', info: 'bg-blue-600 border-blue-800' };
+    const icons = { success: '✅', error: '⚠️', info: 'ℹ️' };
+    const toast = document.createElement('div');
+    toast.className = `toast-item ${styles[type] || styles.success} text-white px-5 py-4 rounded-xl shadow-2xl border-b-4 flex items-start gap-3 max-w-sm`;
+    toast.innerHTML = `<span class="text-xl leading-none">${icons[type] || icons.success}</span><span class="text-sm font-semibold leading-snug pt-0.5">${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => { toast.classList.add('toast-out'); setTimeout(() => toast.remove(), 300); }, 3800);
+}
 function toggleOverheadInputStyle() {
     const type = document.getElementById('setting-overhead-type').value;
     const symbol = document.getElementById('overhead-addon-symbol');
     const input = document.getElementById('setting-overhead');
+    const helper = document.getElementById('overhead-helper-text');
+    document.querySelectorAll('.overhead-type-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.type === type);
+    });
     if (type === 'persen') {
         symbol.innerText = '%';
         input.placeholder = 'ex: 5';
+        if (helper) helper.innerText = 'Contoh: jika diisi 5, maka HPP bahan akan ditambah 5% dari nilainya sebagai biaya overhead.';
     } else {
         symbol.innerText = 'Rp';
         input.placeholder = '0';
+        if (helper) helper.innerText = 'Nilai ini akan ditambahkan secara tetap (flat) ke HPP setiap porsi resep.';
     }
 }
-
+function setOverheadType(type) {
+    document.getElementById('setting-overhead-type').value = type;
+    toggleOverheadInputStyle();
+}
+function updateOverheadStatusBadge() {
+    const badge = document.getElementById('overhead-status-badge');
+    if (!badge) return;
+    if (appSettings.overhead_value > 0) {
+        const display = appSettings.overhead_type === 'persen'
+            ? `${appSettings.overhead_value}% / porsi`
+            : `${formatRp(appSettings.overhead_value)} / porsi`;
+        badge.innerHTML = `✅ Tersimpan: ${display}`;
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800 shadow-sm whitespace-nowrap';
+    } else {
+        badge.innerHTML = `⚪ Belum diatur`;
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-full border bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-gray-200 dark:border-gray-600 shadow-sm whitespace-nowrap';
+    }
+}
 function handleOverheadInputFormatting(element) {
     const type = document.getElementById('setting-overhead-type').value;
-    if (type === 'nominal') {
-        formatRupiahInput(element);
-    }
+    if (type === 'nominal') formatRupiahInput(element);
 }
-
-function showLoading() {
-    document.getElementById('loading-overlay').classList.remove('hidden');
-}
-
-function hideLoading() {
-    document.getElementById('loading-overlay').classList.add('hidden');
-}
-
+function showLoading() { document.getElementById('loading-overlay').classList.remove('hidden'); }
+function hideLoading() { document.getElementById('loading-overlay').classList.add('hidden'); }
 function showSummaryModal(isSuccess, title, successCount, failCount) {
     document.getElementById('summary-icon').innerText = isSuccess ? '✅' : '⚠️';
     document.getElementById('summary-title').innerText = title;
@@ -79,7 +155,6 @@ function showSummaryModal(isSuccess, title, successCount, failCount) {
     document.getElementById('summary-fail').innerText = failCount;
     document.getElementById('modal-summary').classList.remove('hidden');
 }
-
 function getCardGradient(str) {
     const gradients = ['from-slate-800 to-slate-900', 'from-blue-800 to-indigo-900', 'from-emerald-800 to-teal-900', 'from-rose-800 to-pink-900', 'from-amber-800 to-orange-900', 'from-purple-800 to-fuchsia-900', 'from-cyan-800 to-blue-900', 'from-red-800 to-rose-900', 'from-lime-800 to-green-900'];
     let hash = 0;
@@ -88,7 +163,6 @@ function getCardGradient(str) {
     }
     return gradients[Math.abs(hash) % gradients.length];
 }
-
 function toggleMobileMenu() {
     const menu = document.getElementById('mobile-menu');
     const overlay = document.getElementById('mobile-overlay');
@@ -102,7 +176,6 @@ function toggleMobileMenu() {
         setTimeout(() => overlay.classList.add('hidden'), 300);
     }
 }
-
 function toggleKebabMenu(event, menuId) {
     event.stopPropagation();
     const targetMenu = document.getElementById(menuId);
@@ -111,13 +184,12 @@ function toggleKebabMenu(event, menuId) {
     if (isHidden) targetMenu.classList.remove('hidden');
 }
 
-// ---------- LOGIN SCREEN ----------
+// ---------- LOGIN ----------
 function showLoginScreen() {
     document.getElementById('login-overlay').classList.remove('hidden');
     document.getElementById('login-overlay').style.opacity = '1';
     document.getElementById('app-wrapper').classList.add('hidden');
 }
-
 function hideLoginScreen() {
     document.getElementById('login-overlay').style.opacity = '0';
     setTimeout(() => {
@@ -125,15 +197,13 @@ function hideLoginScreen() {
         document.getElementById('app-wrapper').classList.remove('hidden');
     }, 300);
 }
-
-// ---------- ROLE HELPER ----------
 function hasRole(minRole) {
     if (!currentUser) return false;
     const hierarchy = { staff: 1, admin: 2, senior_bar: 3, head_bar: 4 };
     return (hierarchy[currentUser.role] || 0) >= (hierarchy[minRole] || 0);
 }
 
-// ---------- AUTH & SESSION ----------
+// ---------- AUTH ----------
 async function inisialisasiAuth() {
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session?.user) {
@@ -153,16 +223,13 @@ async function inisialisasiAuth() {
         }
     });
 }
-
 async function fetchUserRoleAndSettings(user) {
     showLoading();
-    
     const { data: roleData, error: roleErr } = await supabaseClient
         .from('user_roles')
         .select('role')
         .eq('user_id', user.id)
         .maybeSingle();
-
     let role = 'staff';
     if (roleErr || !roleData) {
         await supabaseClient.from('user_roles').insert([{ user_id: user.id, role: 'staff' }]);
@@ -170,21 +237,17 @@ async function fetchUserRoleAndSettings(user) {
     } else {
         role = roleData.role;
     }
-
     currentUser = { id: user.id, email: user.email, role };
-
     await loadAppSettings();
     updateUIByRole();
     hideLoginScreen();
     hideLoading();
 }
 
-// ---------- LOAD SETTINGS DARI DATABASE ----------
+// ---------- SETTINGS ----------
 async function loadAppSettings() {
     try {
-        const { data, error } = await supabaseClient
-            .from('app_settings')
-            .select('key, value');
+        const { data, error } = await supabaseClient.from('app_settings').select('key, value');
         if (error) return;
         const map = {};
         data.forEach(row => { map[row.key] = row.value; });
@@ -193,43 +256,60 @@ async function loadAppSettings() {
         appSettings.overhead_value = parseFloat(map.overhead_value) || 0;
     } catch (e) {}
 }
-
-// ---------- SIMPAN SETTINGS KE DATABASE ----------
 async function simpanSettings() {
     if (!hasRole('head_bar')) {
-        alert('Hanya Head/Executive yang dapat mengubah pengaturan.');
+        showToast('Hanya Head/Executive yang dapat mengubah pengaturan.', 'error');
         return;
     }
     const limitVal = parseFloat(document.getElementById('setting-hpp-limit').value);
     const ovhType = document.getElementById('setting-overhead-type').value;
     const inputOvh = document.getElementById('setting-overhead').value;
     const overheadVal = ovhType === 'nominal' ? getNilaiAsli(inputOvh) : (parseFloat(inputOvh) || 0);
-
-    if (limitVal <= 0 || limitVal > 100) {
-        alert('Masukkan persentase HPP limit yang valid (1-100)');
+    if (!limitVal || limitVal <= 0 || limitVal > 100) {
+        showToast('Masukkan persentase HPP limit yang valid (1-100).', 'error');
         return;
     }
-
+    if (ovhType === 'persen' && overheadVal > 100) {
+        showToast('Persentase overhead tidak boleh lebih dari 100%.', 'error');
+        return;
+    }
+    const btn = document.getElementById('btn-simpan-settings');
+    const btnText = document.getElementById('btn-simpan-settings-text');
+    if (btn) { btn.disabled = true; btn.classList.add('opacity-60', 'cursor-not-allowed'); }
+    if (btnText) btnText.innerHTML = '<span class="btn-mini-spinner"></span>Menyimpan...';
     showLoading();
     const updates = [
         { key: 'hpp_limit', value: String(limitVal) },
         { key: 'overhead_type', value: ovhType },
         { key: 'overhead_value', value: String(overheadVal) }
     ];
-    for (let u of updates) {
-        await supabaseClient
+    let gagalUpdate = false, errMsg = '';
+    for (const u of updates) {
+        const { error, data } = await supabaseClient
             .from('app_settings')
             .update({ value: u.value, updated_at: new Date() })
-            .eq('key', u.key);
+            .eq('key', u.key)
+            .select();
+        if (error) { gagalUpdate = true; errMsg = error.message; break; }
+        if (!data || data.length === 0) {
+            gagalUpdate = true;
+            errMsg = `Baris dengan key "${u.key}" belum ada di tabel app_settings.`;
+            break;
+        }
+    }
+    hideLoading();
+    if (btn) { btn.disabled = false; btn.classList.remove('opacity-60', 'cursor-not-allowed'); }
+    if (btnText) btnText.innerHTML = '💾 Simpan Pengaturan';
+    if (gagalUpdate) {
+        showToast('Gagal menyimpan pengaturan: ' + errMsg, 'error');
+        return;
     }
     await loadAppSettings();
     updateUIByRole();
-    loadDirektori();
-    hideLoading();
-    alert('✅ Pengaturan berhasil diperbarui untuk semua pengguna.');
+    showToast('Pengaturan berhasil disimpan.', 'success');
 }
 
-// ---------- LOGIN / LOGOUT ----------
+// ---------- LOGIN/LOGOUT ----------
 async function loginAdmin() {
     const email = document.getElementById('login-email').value;
     const password = document.getElementById('login-password').value;
@@ -238,14 +318,8 @@ async function loginAdmin() {
     btn.innerText = "Memverifikasi...";
     const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
     btn.innerText = "Masuk";
-    if (error) {
-        alert("Gagal Login: " + error.message);
-    } else {
-        document.getElementById('login-email').value = '';
-        document.getElementById('login-password').value = '';
-    }
+    if (error) alert("Gagal Login: " + error.message);
 }
-
 async function logoutAdmin() {
     if (!confirm("Apakah Anda yakin ingin keluar?")) return;
     showLoading();
@@ -253,133 +327,126 @@ async function logoutAdmin() {
     hideLoading();
 }
 
-// ---------- UI UPDATE BERDASARKAN ROLE ----------
+// ---------- UI UPDATE ----------
 function updateUIByRole() {
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
-
-    // ---- Tab mapping ----
-    const allTabs = ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori', 'tab-settings'];
+    
+    // URUTAN TAB: Dashboard, Directory Menu, HPP, Bahan Baku, Kategori, Data Penjualan, Settings
+    const allTabs = ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings'];
     const tabMap = {
-        staff: ['tab-direktori', 'tab-summary'],
-        admin: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku'],
-        senior_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori'],
-        head_bar: ['tab-direktori', 'tab-summary', 'tab-dashboard', 'tab-bahan-baku', 'tab-input-hpp', 'tab-kategori', 'tab-settings']
+        staff: ['tab-dashboard', 'tab-direktori', 'tab-hpp'],
+        admin: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku'],
+        senior_bar: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan'],
+        head_bar: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings']
     };
     const allowed = tabMap[role] || tabMap.staff;
-
+    
+    // HOME = tab-direktori (Directory Menu)
+    const homeTab = 'tab-direktori';
+    const activeTab = allowed.includes(homeTab) ? homeTab : allowed[0];
+    currentActiveTab = activeTab;
+    
     // Sembunyikan semua tab
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('active'); }
     });
-
-    // Tampilkan yang diizinkan
+    // Tampilkan tab yang diizinkan
     allowed.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.remove('hidden'); }
     });
-    
-    // Tab pertama yang aktif = allowed[0] (direktori untuk semua role)
-    const firstTab = allowed[0] || 'tab-direktori';
-    const firstEl = document.getElementById(firstTab);
-    if (firstEl) firstEl.classList.add('active');
+    // Aktifkan tab yang benar
+    const firstEl = document.getElementById(activeTab);
+    if (firstEl) { firstEl.classList.add('active'); }
 
-    // ---- Render navbar ----
     const navbar = document.getElementById('navbar-tabs');
     const tabNames = {
-        'tab-direktori': '📑 Directory Menu',
-        'tab-summary': '📊 Summary HPP',
         'tab-dashboard': '📈 Dashboard',
+        'tab-direktori': '📑 Directory Menu',
+        'tab-hpp': '📊 HPP & Summary',
         'tab-bahan-baku': '📦 Bahan Baku',
-        'tab-input-hpp': '✍️ Input Resep',
         'tab-kategori': '🏷️ Kategori',
+        'tab-data-penjualan': '📋 Data Penjualan',
         'tab-settings': '⚙️ Settings'
     };
     navbar.innerHTML = '';
     allowed.forEach(id => {
         const btn = document.createElement('button');
-        btn.className = `btn-tab ${id === firstTab ? 'active' : ''}`;
+        btn.className = `btn-tab ${id === activeTab ? 'active' : ''}`;
         btn.innerText = tabNames[id] || id;
         btn.onclick = () => switchTab(id);
         navbar.appendChild(btn);
     });
 
-    // ---- Mobile menu ----
     const mobileMenuList = document.getElementById('mobile-menu-list');
     mobileMenuList.innerHTML = '';
     const statusDiv = document.createElement('div');
-    statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100';
+    statusDiv.className = 'flex flex-col gap-3 pb-5 mb-3 border-b border-gray-100 dark:border-gray-700';
     const statusSpan = document.createElement('span');
-    statusSpan.className = 'text-sm font-bold text-blue-600 bg-blue-50 border border-blue-200 px-3 py-2 rounded-lg text-center shadow-inner';
+    statusSpan.className = 'text-sm font-bold text-[#FF3B30] bg-[#FF3B30]/10 border border-[#FF3B30]/20 px-3 py-2 rounded-lg text-center shadow-inner';
     statusSpan.innerText = isLoggedIn ? `🌟 ${role.toUpperCase()} (${currentUser.email})` : '👤 Guest';
     statusDiv.appendChild(statusSpan);
-
     if (isLoggedIn) {
         const logoutBtn = document.createElement('button');
-        logoutBtn.className = 'bg-gradient-to-r from-red-600 to-red-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
+        logoutBtn.className = 'bg-[#FF3B30] text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:shadow-lg transition-shadow text-center';
         logoutBtn.innerText = 'Logout Admin';
         logoutBtn.onclick = () => { toggleMobileMenu(); logoutAdmin(); };
         statusDiv.appendChild(logoutBtn);
     }
     mobileMenuList.appendChild(statusDiv);
-
     allowed.forEach(id => {
         const btn = document.createElement('button');
-        btn.className = `btn-tab-mobile text-gray-600 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 transition-colors ${id === firstTab ? 'bg-blue-50 text-blue-700 font-bold' : ''}`;
+        btn.className = `btn-tab-mobile text-gray-600 dark:text-gray-300 font-semibold text-left py-3 px-4 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${id === activeTab ? 'bg-blue-50 dark:bg-blue-900/20 text-[#FF3B30] font-bold' : ''}`;
         btn.innerText = tabNames[id] || id;
         btn.onclick = () => { switchTab(id); toggleMobileMenu(); };
         mobileMenuList.appendChild(btn);
     });
 
-    // ---- Role-based visibility ----
-    document.querySelectorAll('.role-admin').forEach(el => {
-        el.classList.toggle('hidden', !hasRole('admin'));
-    });
-    document.querySelectorAll('.role-senior').forEach(el => {
-        el.classList.toggle('hidden', !hasRole('senior_bar'));
-    });
-    document.querySelectorAll('.role-head').forEach(el => {
-        el.classList.toggle('hidden', !hasRole('head_bar'));
-    });
+    document.querySelectorAll('.role-admin').forEach(el => el.classList.toggle('hidden', !hasRole('admin')));
+    document.querySelectorAll('.role-senior').forEach(el => el.classList.toggle('hidden', !hasRole('senior_bar')));
+    document.querySelectorAll('.role-head').forEach(el => el.classList.toggle('hidden', !hasRole('head_bar')));
 
-    // ---- Settings readonly message ----
     const msg = document.getElementById('settings-readonly-msg');
-    if (msg) {
-        if (isLoggedIn && !hasRole('head_bar')) {
-            msg.classList.remove('hidden');
-        } else {
-            msg.classList.add('hidden');
-        }
-    }
+    if (msg) msg.classList.toggle('hidden', !isLoggedIn || hasRole('head_bar'));
 
-    // ---- Status bar di navbar ----
     const userStatus = document.getElementById('user-status');
     if (isLoggedIn) {
         userStatus.innerHTML = `🌟 ${role.toUpperCase()}`;
-        userStatus.className = 'text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full shadow-inner border border-blue-200';
+        userStatus.className = 'text-xs font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-1.5 rounded-full shadow-inner border border-[#FF3B30]/20';
     } else {
         userStatus.innerHTML = '👤 Guest';
-        userStatus.className = 'text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1.5 rounded-full shadow-inner border border-gray-200';
+        userStatus.className = 'text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full shadow-inner border border-gray-200 dark:border-gray-600';
     }
 
-    // ---- ISI SETTINGS FORM DARI appSettings ----
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
-    document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
-    toggleOverheadInputStyle();
+    setOverheadType(appSettings.overhead_type);
     if (appSettings.overhead_type === 'nominal') {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         formatRupiahInput(document.getElementById('setting-overhead'));
     } else {
         document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
     }
+    updateOverheadStatusBadge();
 
-    // ---- Load data untuk tab yang aktif ----
+    initBulanTahunDropdowns();
+    loadMenuDropdownPenjualan();
+    populateKategoriFilterPenjualan();
+
+    // Restore tab dari sessionStorage jika ada
+    const savedTab = sessionStorage.getItem('activeTab');
+    if (savedTab && allowed.includes(savedTab)) {
+        switchTab(savedTab);
+    } else {
+        switchTab(activeTab);
+    }
+
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
         bbCurrentPage = 1;
         loadBahanBaku();
     }
-    if (document.getElementById('tab-input-hpp').classList.contains('active')) {
+    if (document.getElementById('tab-hpp').classList.contains('active')) {
         loadDropdownBahanBaku('baru');
     }
     loadDirektori();
@@ -396,36 +463,82 @@ function switchTab(tabId) {
         target.classList.remove('hidden');
         target.classList.add('active');
     }
-    
-    // Update navbar active
     document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
     const activeNav = Array.from(document.querySelectorAll('.btn-tab')).find(btn => {
         const onclickAttr = btn.getAttribute('onclick');
         return onclickAttr && onclickAttr.includes(`'${tabId}'`);
     });
     if (activeNav) activeNav.classList.add('active');
+    
+    currentActiveTab = tabId;
+    try { sessionStorage.setItem('activeTab', tabId); } catch(e) {}
 
-    // ---- Jika pindah ke tab Settings, reload ulang nilai dari appSettings ----
     if (tabId === 'tab-settings') {
         document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
-        document.getElementById('setting-overhead-type').value = appSettings.overhead_type;
-        toggleOverheadInputStyle();
+        setOverheadType(appSettings.overhead_type);
         if (appSettings.overhead_type === 'nominal') {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
             formatRupiahInput(document.getElementById('setting-overhead'));
         } else {
             document.getElementById('setting-overhead').value = appSettings.overhead_value.toString();
         }
+        updateOverheadStatusBadge();
+        loadTheme();
     }
-
-    // ---- Load data sesuai tab ----
     if (tabId === 'tab-bahan-baku') { bbCurrentPage = 1; loadBahanBaku(); }
-    if (tabId === 'tab-input-hpp') loadDropdownBahanBaku('baru');
-    if (tabId === 'tab-direktori' || tabId === 'tab-summary' || tabId === 'tab-dashboard') loadDirektori();
-    if (tabId === 'tab-summary') renderTableSummary();
+    if (tabId === 'tab-hpp') { loadDropdownBahanBaku('baru'); }
+    if (tabId === 'tab-direktori' || tabId === 'tab-hpp' || tabId === 'tab-dashboard') loadDirektori();
+    if (tabId === 'tab-hpp') renderTableSummary();
+    if (tabId === 'tab-data-penjualan') {
+        loadDataPenjualan();
+        renderTablePenjualanInput();
+    }
+    if (tabId === 'tab-dashboard') {
+        setTimeout(updateDashboardEngineering, 500);
+    }
 }
 
-// ==================== FUNGSI BAHAN BAKU ====================
+// ---------- LOGO SEBAGAI LINK KE HOME ----------
+document.addEventListener('DOMContentLoaded', function() {
+    const brandLink = document.getElementById('brand-link');
+    if (brandLink) {
+        brandLink.addEventListener('click', function(e) {
+            if (document.getElementById('login-overlay').classList.contains('hidden') === false) return;
+            switchTab('tab-direktori');
+            document.querySelectorAll('.btn-tab').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.innerText.includes('Directory Menu')) {
+                    btn.classList.add('active');
+                }
+            });
+            const mobileMenu = document.getElementById('mobile-menu');
+            if (!mobileMenu.classList.contains('translate-x-full')) {
+                toggleMobileMenu();
+            }
+        });
+    }
+});
+
+// ===== MENCEGAH REFRESH SAAT KEMBALI KE TAB =====
+window.addEventListener('pageshow', function(event) {
+    if (event.persisted) {
+        const savedTab = sessionStorage.getItem('activeTab');
+        if (savedTab && document.getElementById(savedTab)) {
+            switchTab(savedTab);
+        }
+        const savedScroll = sessionStorage.getItem('scrollPosition');
+        if (savedScroll) {
+            window.scrollTo(0, parseInt(savedScroll));
+        }
+    }
+});
+window.addEventListener('pagehide', function() {
+    try {
+        sessionStorage.setItem('scrollPosition', window.scrollY.toString());
+    } catch(e) {}
+});
+
+// ==================== BAHAN BAKU ====================
 function kalkulasiHargaSatuBB(mode) {
     const prefix = mode === 'edit' ? 'edit-bb-' : 'bb-';
     const hrgBeli = getNilaiAsli(document.getElementById(prefix + 'harga-beli').value);
@@ -433,32 +546,22 @@ function kalkulasiHargaSatuBB(mode) {
     const satuan = document.getElementById(prefix + 'satuan-resep').value || '-';
     document.getElementById(prefix + 'harga-final').innerText = `${formatRp(hrgBeli / (konversi > 0 ? konversi : 1))} / ${satuan}`;
 }
-
 function sortBahanBaku(key, order) {
-    bbSortKey = key;
-    bbSortOrder = order;
-    bbCurrentPage = 1;
+    bbSortKey = key; bbSortOrder = order; bbCurrentPage = 1;
     document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
     renderTabelBahanBaku();
 }
-
 async function loadBahanBaku() {
     const { data, error } = await supabaseClient.from('bahan_baku').select('*');
     if (!error) { bahanBakuList = data; renderTabelBahanBaku(); }
 }
-
 function updatePaginationBB() {
     bbCurrentPage = 1;
     const val = document.getElementById('bb-per-page').value;
     bbItemsPerPage = val === 'all' ? bahanBakuList.length : parseInt(val);
     renderTabelBahanBaku();
 }
-
-function ubahHalamanBB(page) {
-    bbCurrentPage = page;
-    renderTabelBahanBaku();
-}
-
+function ubahHalamanBB(page) { bbCurrentPage = page; renderTabelBahanBaku(); }
 function renderTabelBahanBaku() {
     const searchQuery = document.getElementById('search-bb').value.toLowerCase();
     let filteredData = bahanBakuList.filter(item => item.nama.toLowerCase().includes(searchQuery));
@@ -486,18 +589,19 @@ function renderTabelBahanBaku() {
     } else {
         pageData.forEach(item => {
             const canEdit = hasRole('admin');
-            tbody.innerHTML += `<tr class="border-b border-gray-100 hover:bg-blue-50/30 transition-colors relative">
-                <td class="p-4 font-bold text-gray-700 truncate max-w-xs border-r">${item.nama}</td>
-                <td class="p-3 border-l text-gray-500 bg-gray-50/50">${item.satuan_beli || '-'}</td>
-                <td class="p-3 border-r font-semibold text-gray-700 bg-gray-50/50">${item.harga_beli ? formatRp(item.harga_beli) : '-'}</td>
-                <td class="p-3 text-gray-500">${item.nilai_konversi || 1} ${item.satuan}</td>
-                <td class="p-3 text-blue-700 font-black">${formatRp(item.harga)} <span class="text-xs text-gray-400 font-normal">/ ${item.satuan}</span></td>
-                <td class="p-3 text-center border-l ${canEdit ? '' : 'hidden'}">
+            tbody.innerHTML += `
+            <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors relative">
+                <td class="p-4 font-bold text-gray-700 dark:text-gray-300 truncate max-w-xs border-r dark:border-gray-700">${item.nama}</td>
+                <td class="p-3 border-l text-gray-500 dark:text-gray-400 bg-gray-50/50 dark:bg-gray-800/50">${item.satuan_beli || '-'}</td>
+                <td class="p-3 border-r font-semibold text-gray-700 dark:text-gray-300 bg-gray-50/50 dark:bg-gray-800/50">${item.harga_beli ? formatRp(item.harga_beli) : '-'}</td>
+                <td class="p-3 text-gray-500 dark:text-gray-400">${item.nilai_konversi || 1} ${item.satuan}</td>
+                <td class="p-3 text-[#FF3B30] font-black">${formatRp(item.harga)} <span class="text-xs text-gray-400 dark:text-gray-500 font-normal">/ ${item.satuan}</span></td>
+                <td class="p-3 text-center border-l dark:border-gray-700 ${canEdit ? '' : 'hidden'}">
                     <div class="relative inline-block">
-                        <button onclick="toggleKebabMenu(event, 'drop-bb-${item.id}')" class="kebab-btn">⋮</button>
-                        <div id="drop-bb-${item.id}" class="dropdown-menu hidden">
-                            <button onclick="bukaModalEditBB(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="text-blue-600">📝 Edit</button>
-                            <button onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')" class="text-red-600 border-t">🗑️ Hapus</button>
+                        <button onclick="toggleKebabMenu(event, 'drop-bb-${item.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                        <div id="drop-bb-${item.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-32 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden" style="top:100%;">
+                            <button onclick="bukaModalEditBB(${JSON.stringify(item).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit</button>
+                            <button onclick="aksiHapusBahanBaku(${item.id}, '${item.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700 mt-1">🗑️ Hapus</button>
                         </div>
                     </div>
                 </td>
@@ -507,20 +611,19 @@ function renderTabelBahanBaku() {
     document.getElementById('bb-info-halaman').innerText = `Menampilkan ${totalData > 0 ? startIndex + 1 : 0} - ${Math.min(endIndex, totalData)} dari ${totalData} data`;
     let btnHTML = '';
     if (!isAll && totalPages > 1) {
-        btnHTML += `<button onclick="ubahHalamanBB(${Math.max(1, bbCurrentPage - 1)})" class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 font-medium ${bbCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">Prev</button>`;
+        btnHTML += `<button onclick="ubahHalamanBB(${Math.max(1, bbCurrentPage - 1)})" class="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium ${bbCurrentPage === 1 ? 'opacity-50 cursor-not-allowed' : ''}">Prev</button>`;
         for (let i = 1; i <= totalPages; i++) {
             if (i === bbCurrentPage || i === 1 || i === totalPages || (i >= bbCurrentPage - 1 && i <= bbCurrentPage + 1)) {
-                let active = i === bbCurrentPage ? 'bg-blue-600 text-white border-blue-600 shadow' : 'hover:bg-gray-100 text-gray-700 border-gray-200';
+                let active = i === bbCurrentPage ? 'bg-[#FF3B30] text-white border-[#FF3B30] shadow' : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700';
                 btnHTML += `<button onclick="ubahHalamanBB(${i})" class="px-3 py-1.5 border rounded-lg font-medium ${active}">${i}</button>`;
             } else if (i === 2 || i === totalPages - 1) {
                 btnHTML += `<span class="px-2 text-gray-400">...</span>`;
             }
         }
-        btnHTML += `<button onclick="ubahHalamanBB(${Math.min(totalPages, bbCurrentPage + 1)})" class="px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-100 font-medium ${bbCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">Next</button>`;
+        btnHTML += `<button onclick="ubahHalamanBB(${Math.min(totalPages, bbCurrentPage + 1)})" class="px-3 py-1.5 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 font-medium ${bbCurrentPage === totalPages ? 'opacity-50 cursor-not-allowed' : ''}">Next</button>`;
     }
     document.getElementById('bb-pagination-controls').innerHTML = btnHTML;
 }
-
 async function tambahBahanBaku() {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     const nama = document.getElementById('bb-nama').value.trim();
@@ -540,7 +643,6 @@ async function tambahBahanBaku() {
         loadBahanBaku();
     }
 }
-
 async function aksiHapusBahanBaku(id, nama) {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     if (confirm(`Yakin hapus "${nama}"?`)) {
@@ -553,7 +655,6 @@ async function aksiHapusBahanBaku(id, nama) {
         } else loadBahanBaku();
     }
 }
-
 function bukaModalEditBB(item) {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     document.getElementById('edit-bb-id').value = item.id;
@@ -566,7 +667,6 @@ function bukaModalEditBB(item) {
     kalkulasiHargaSatuBB('edit');
     document.getElementById('modal-edit-bb').classList.remove('hidden');
 }
-
 async function simpanEditBahanBaku() {
     if (!hasRole('admin')) return alert('Akses ditolak.');
     const id = document.getElementById('edit-bb-id').value;
@@ -583,7 +683,7 @@ async function simpanEditBahanBaku() {
     else { closeModal('modal-edit-bb'); loadBahanBaku(); loadDirektori(); }
 }
 
-// ---------- FUNGSI KATEGORI ----------
+// ==================== KATEGORI ====================
 async function loadKategoriDB() {
     const { data, error } = await supabaseClient.from('kategori_db').select('*').order('nama');
     if (!error && data) {
@@ -592,9 +692,9 @@ async function loadKategoriDB() {
         renderDropdownKategori();
         renderTabelManajemenKategori();
         populateFilterKategoriDirektori();
+        populateKategoriFilterPenjualan();
     }
 }
-
 function renderDropdownKategori() {
     const optKat = '<option value="Uncategorized">-- Pilih Kategori --</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     const optSub = '<option value="Uncategorized">-- Pilih Sub-Kategori --</option>' + listSubKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
@@ -605,7 +705,6 @@ function renderDropdownKategori() {
         fSum.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     }
 }
-
 function populateFilterKategoriDirektori() {
     const filterEl = document.getElementById('filter-kategori-direktori');
     if (!filterEl) return;
@@ -613,34 +712,35 @@ function populateFilterKategoriDirektori() {
     filterEl.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
     filterEl.value = currentVal;
 }
-
+function populateKategoriFilterPenjualan() {
+    const filterEl = document.getElementById('jual-filter-kategori');
+    if (!filterEl) return;
+    const currentVal = filterEl.value;
+    filterEl.innerHTML = '<option value="all">Semua Kategori</option>' + listKategori.map(k => `<option value="${k.nama}">${k.nama}</option>`).join('');
+    filterEl.value = currentVal;
+}
 function renderTabelManajemenKategori() {
     const ulKat = document.getElementById('list-manajemen-kategori');
     const ulSub = document.getElementById('list-manajemen-sub-kategori');
     if (!ulKat || !ulSub) return;
-
     const canEdit = hasRole('senior_bar');
     const generateHTML = (list, jenis) => {
-        if (list.length === 0) return `<li class="text-sm text-gray-400 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
+        if (list.length === 0) return `<li class="text-sm text-gray-400 dark:text-gray-500 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
         return list.map(k => `
-            <li class="flex justify-between items-center bg-gray-50 border border-gray-100 p-3 rounded-lg relative hover:bg-white transition-colors">
-                <span class="font-semibold text-gray-700 truncate pr-4">${k.nama}</span>
-                ${canEdit ? `
-                <div class="relative">
-                    <button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="kebab-btn">⋮</button>
-                    <div id="drop-kat-${k.id}" class="dropdown-menu hidden">
-                        <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="text-blue-600">📝 Edit Nama</button>
-                        <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="text-green-600">➕ Tambahkan Menu</button>
-                        <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="text-red-600 border-t">🗑️ Hapus Master</button>
-                    </div>
-                </div>` : ''}
+            <li class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 p-3 rounded-lg relative hover:bg-white dark:hover:bg-gray-600 transition-colors">
+                <span class="font-semibold text-gray-700 dark:text-gray-300 truncate pr-4">${k.nama}</span>
+                ${canEdit ? `<div class="relative"><button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="kebab-btn bg-white dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                <div id="drop-kat-${k.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-44 py-2 text-sm text-gray-700 dark:text-gray-300 z-50 overflow-hidden" style="top:100%;">
+                    <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit Nama</button>
+                    <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 font-bold text-green-600 dark:text-green-400 border-b border-gray-100 dark:border-gray-700">➕ Tambahkan Menu</button>
+                    <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 mt-1">🗑️ Hapus Master</button>
+                </div></div>` : ''}
             </li>
         `).join('');
     };
     ulKat.innerHTML = generateHTML(listKategori, 'Kategori');
     ulSub.innerHTML = generateHTML(listSubKategori, 'Sub-Kategori');
 }
-
 function bukaModalFormKategori(jenis, mode, id = null, oldName = '') {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     document.getElementById('kat-modal-jenis').value = jenis;
@@ -658,7 +758,6 @@ function bukaModalFormKategori(jenis, mode, id = null, oldName = '') {
     }
     document.getElementById('modal-kelola-kategori').classList.remove('hidden');
 }
-
 async function simpanKategoriManajemen() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const jenis = document.getElementById('kat-modal-jenis').value;
@@ -690,7 +789,6 @@ async function simpanKategoriManajemen() {
         alert(`Nama berhasil diubah! Seluruh sinkronisasi data resep aman.`);
     }
 }
-
 async function hapusKategoriManajemen(id, jenis, nama) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const targetField = jenis === 'Kategori' ? 'kategori' : 'sub_kategori';
@@ -716,7 +814,6 @@ async function hapusKategoriManajemen(id, jenis, nama) {
         hideLoading();
     }
 }
-
 async function bukaModalAssignMenu(jenis, namaTarget) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     document.getElementById('assign-target-nama').value = namaTarget;
@@ -731,7 +828,6 @@ async function bukaModalAssignMenu(jenis, namaTarget) {
     renderAssignMenuList();
     document.getElementById('modal-assign-menu').classList.remove('hidden');
 }
-
 function renderAssignMenuList() {
     const listContainer = document.getElementById('assign-menu-list');
     const searchQ = document.getElementById('search-assign-menu').value.toLowerCase();
@@ -746,26 +842,24 @@ function renderAssignMenuList() {
         const isChecked = isAlreadyInTarget ? 'checked disabled' : '';
         let badgeHTML = '';
         if (isAlreadyInTarget) {
-            badgeHTML = `<span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded border border-green-200">Sudah Masuk Kategori Ini</span>`;
+            badgeHTML = `<span class="text-xs bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded border border-green-200 dark:border-green-800">Sudah Masuk Kategori Ini</span>`;
         } else if (currentVal !== 'Uncategorized' && currentVal !== '-') {
-            badgeHTML = `<span class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded border border-amber-200 max-w-[120px] truncate">Saat ini: ${currentVal}</span>`;
+            badgeHTML = `<span class="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 max-w-[120px] truncate">Saat ini: ${currentVal}</span>`;
         } else {
-            badgeHTML = `<span class="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded border border-gray-300">Uncategorized</span>`;
+            badgeHTML = `<span class="text-xs bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 px-2 py-0.5 rounded border border-gray-300 dark:border-gray-600">Uncategorized</span>`;
         }
         listContainer.innerHTML += `
-            <label class="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-xl hover:bg-blue-50 cursor-pointer transition-colors ${isAlreadyInTarget ? 'opacity-60' : ''}">
+            <label class="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer transition-colors ${isAlreadyInTarget ? 'opacity-60' : ''}">
                 <div class="flex items-center gap-3">
-                    <input type="checkbox" class="assign-checkbox w-5 h-5 text-blue-600 rounded focus:ring-blue-500" value="${menu.id}" data-current="${currentVal}" ${isChecked}>
-                    <span class="font-bold text-gray-700">${menu.nama}</span>
+                    <input type="checkbox" class="assign-checkbox w-5 h-5 text-[#FF3B30] rounded focus:ring-[#FF3B30]" value="${menu.id}" data-current="${currentVal}" ${isChecked}>
+                    <span class="font-bold text-gray-700 dark:text-gray-300">${menu.nama}</span>
                 </div>
                 ${badgeHTML}
             </label>
         `;
     });
 }
-
 function filterAssignMenu() { renderAssignMenuList(); }
-
 async function simpanAssignMenu() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const jenis = document.getElementById('assign-target-jenis').value;
@@ -801,7 +895,7 @@ async function simpanAssignMenu() {
     }
 }
 
-// ---------- DROPDOWN BAHAN BAKU UNTUK RESEP ----------
+// ==================== DROPDOWN BAHAN BAKU ====================
 async function loadDropdownBahanBaku(targetElement) {
     const { data } = await supabaseClient.from('bahan_baku').select('*').order('nama');
     bahanBakuList = data || [];
@@ -809,20 +903,18 @@ async function loadDropdownBahanBaku(targetElement) {
     const ul = document.getElementById(prefix + 'dropdown-list');
     ul.innerHTML = '';
     if (bahanBakuList.length === 0) {
-        ul.innerHTML = '<li class="p-4 text-gray-400 text-sm italic text-center">Belum ada bahan di database</li>';
+        ul.innerHTML = '<li class="p-4 text-gray-400 dark:text-gray-500 text-sm italic text-center">Belum ada bahan di database</li>';
     } else {
         bahanBakuList.forEach(bb => {
-            ul.innerHTML += `<li class="p-3 border-b border-gray-100 cursor-pointer hover:bg-blue-50 text-sm bb-item flex justify-between items-center transition-colors" onclick="pilihBahanBaku('${targetElement}', '${bb.id}', '${bb.nama.replace(/'/g, "\\'")}', ${bb.harga}, '${bb.satuan}')"><div class="font-bold text-gray-700">${bb.nama}</div><div class="text-xs font-bold text-blue-700 bg-blue-100 px-2.5 py-1 rounded-md">${formatRp(bb.harga)} <span class="text-gray-500 font-normal">/ ${bb.satuan}</span></div></li>`;
+            ul.innerHTML += `<li class="p-3 border-b border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-blue-50 dark:hover:bg-blue-900/20 text-sm bb-item flex justify-between items-center transition-colors" onclick="pilihBahanBaku('${targetElement}', '${bb.id}', '${bb.nama.replace(/'/g, "\\'")}', ${bb.harga}, '${bb.satuan}')"><div class="font-bold text-gray-700 dark:text-gray-300">${bb.nama}</div><div class="text-xs font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-2.5 py-1 rounded-md">${formatRp(bb.harga)} <span class="text-gray-500 dark:text-gray-400 font-normal">/ ${bb.satuan}</span></div></li>`;
         });
     }
 }
-
 function bukaDropdownBB(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     document.getElementById(prefix + 'dropdown-list').classList.remove('hidden');
     filterDropdownBB(mode);
 }
-
 function filterDropdownBB(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const inputVal = document.getElementById(prefix + 'pilih-bb').value.toLowerCase();
@@ -835,7 +927,6 @@ function filterDropdownBB(mode) {
         }
     }
 }
-
 function pilihBahanBaku(mode, id, nama, harga, satuan) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     document.getElementById(prefix + 'pilih-bb').value = nama;
@@ -846,7 +937,7 @@ function pilihBahanBaku(mode, id, nama, harga, satuan) {
     document.getElementById(prefix + 'dropdown-list').classList.add('hidden');
 }
 
-// ---------- KOMPOSISI ----------
+// ==================== KOMPOSISI ====================
 function addTempKomposisi(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const id = document.getElementById(prefix + 'bb-selected-id').value;
@@ -863,13 +954,11 @@ function addTempKomposisi(mode) {
     document.getElementById(prefix + 'qty-bb').value = '';
     renderKomposisi(mode);
 }
-
 function removeTempKomposisi(mode, index) {
     if (mode === 'edit') tempKomposisiEdit.splice(index, 1);
     else tempKomposisiBaru.splice(index, 1);
     renderKomposisi(mode);
 }
-
 function renderKomposisi(mode) {
     const prefix = mode === 'edit' ? 'edit-' : '';
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
@@ -877,22 +966,21 @@ function renderKomposisi(mode) {
     tbody.innerHTML = '';
     dataArr.forEach((item, idx) => {
         tbody.innerHTML += `
-            <tr class="hover:bg-gray-50 transition-colors">
-                <td class="p-3 font-semibold text-gray-700">${item.nama}</td>
+            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                <td class="p-3 font-semibold text-gray-700 dark:text-gray-300">${item.nama}</td>
                 <td class="p-3 text-center">
                     <div class="flex items-center justify-center gap-1">
-                        <input type="number" step="any" value="${item.qty}" class="w-20 p-1 border border-gray-300 rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-blue-400" oninput="directUpdateQtyKomposisi('${mode}', ${idx}, this.value)" />
-                        <span class="text-xs font-bold text-gray-400">${item.satuan}</span>
+                        <input type="number" step="any" value="${item.qty}" class="w-20 p-1 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-sm outline-none focus:ring-2 focus:ring-[#FF3B30] dark:bg-gray-700 dark:text-white" oninput="directUpdateQtyKomposisi('${mode}', ${idx}, this.value)" />
+                        <span class="text-xs font-bold text-gray-400 dark:text-gray-500">${item.satuan}</span>
                     </div>
                 </td>
-                <td class="p-3 text-blue-600 font-bold text-right" id="${prefix}subtotal-cell-${idx}">${formatRp(item.subtotal)}</td>
-                <td class="p-3 text-center"><button onclick="removeTempKomposisi('${mode}', ${idx})" class="text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition-colors font-bold text-lg leading-none">×</button></td>
+                <td class="p-3 text-[#FF3B30] font-bold text-right" id="${prefix}subtotal-cell-${idx}">${formatRp(item.subtotal)}</td>
+                <td class="p-3 text-center"><button onclick="removeTempKomposisi('${mode}', ${idx})" class="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 p-1.5 rounded-lg transition-colors font-bold text-lg leading-none">×</button></td>
             </tr>
         `;
     });
     updateKalkulasiHPP(mode);
 }
-
 function directUpdateQtyKomposisi(mode, idx, value) {
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
     const currentQty = parseFloat(value) || 0;
@@ -907,8 +995,6 @@ function directUpdateQtyKomposisi(mode, idx, value) {
         updateKalkulasiHPP(mode);
     }
 }
-
-// ---------- KALKULASI HPP (TERMASUK OVERHEAD) ----------
 function updateKalkulasiHPP(mode) {
     const prefix = mode === 'edit' ? 'edit-r-' : 'r-';
     const dataArr = mode === 'edit' ? tempKomposisiEdit : tempKomposisiBaru;
@@ -916,23 +1002,18 @@ function updateKalkulasiHPP(mode) {
     const elYield = document.getElementById(prefix + 'yield');
     if (elHargaJual && !elHargaJual.hasAttribute('data-bound')) { elHargaJual.addEventListener('input', () => updateKalkulasiHPP(mode)); elHargaJual.setAttribute('data-bound', 'true'); }
     if (elYield && !elYield.hasAttribute('data-bound')) { elYield.addEventListener('input', () => updateKalkulasiHPP(mode)); elYield.setAttribute('data-bound', 'true'); }
-
     const hargaJual = getNilaiAsli(elHargaJual.value);
     const yieldPorsi = parseFloat(elYield.value) || 1;
     const totalBahanPokok = dataArr.reduce((sum, item) => sum + item.subtotal, 0);
     const costPerPorsiBase = (totalBahanPokok / yieldPorsi);
-
     const overhead = appSettings.overhead_type === 'persen' 
         ? (costPerPorsiBase * (appSettings.overhead_value / 100)) 
         : appSettings.overhead_value;
-
     const hppPerPorsi = costPerPorsiBase + overhead;
     const marginValue = hargaJual - hppPerPorsi;
     const hppValue = hargaJual > 0 ? (hppPerPorsi / hargaJual) * 100 : 0;
-
     document.getElementById(prefix + 'total-cost').innerText = formatRp(hppPerPorsi);
     if (mode !== 'edit') document.getElementById(prefix + 'target-jual').innerText = formatRp(hargaJual);
-
     const elMargin = document.getElementById(prefix + 'margin');
     elMargin.innerText = formatRp(marginValue);
     elMargin.className = marginValue < 0 ? 'font-bold text-red-400' : 'font-bold text-emerald-400';
@@ -940,8 +1021,6 @@ function updateKalkulasiHPP(mode) {
     elHPP.innerText = hppValue.toFixed(2) + '%';
     elHPP.className = hppValue > appSettings.hpp_limit ? 'font-black text-lg text-red-500' : 'font-black text-lg text-emerald-400';
 }
-
-// ---------- SIMPAN RESEP ----------
 async function simpanResepFinal() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     let nama = document.getElementById('r-nama').value.trim();
@@ -966,10 +1045,9 @@ async function simpanResepFinal() {
         document.getElementById('r-yield').value = '1';
         tempKomposisiBaru = [];
         renderKomposisi('baru');
-        switchTab('tab-direktori');
+        switchTab('tab-hpp');
     }
 }
-
 async function duplikasiResepCard(id, namaMenu) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     if (!confirm(`Apakah Anda yakin ingin menduplikasi resep "${namaMenu}"?`)) return;
@@ -1006,33 +1084,27 @@ async function duplikasiResepCard(id, namaMenu) {
     }
 }
 
-// ---------- LOAD DIREKTORI & SUMMARY ----------
+// ==================== LOAD DIREKTORI ====================
 async function loadDirektori() {
     await loadAppSettings();
-
     const { data: bbData } = await supabaseClient.from('bahan_baku').select('*');
     if (bbData) bahanBakuList = bbData;
-
     const { data, error } = await supabaseClient.from('resep').select(`id, nama, kategori, sub_kategori, harga_jual, yield, resep_detail (qty, bahan_baku_id, bahan_baku (nama, satuan, harga))`);
     if (error) return;
-
     cachedResepSummaryData = data.map(menu => {
         let totalBiayaBahan = 0, komposisiHTML = '';
         (menu.resep_detail || []).forEach(det => {
             if (det.bahan_baku) {
                 totalBiayaBahan += det.qty * det.bahan_baku.harga;
-                komposisiHTML += `<li class="flex justify-between items-start text-[15px] py-1.5 border-b border-gray-100 last:border-0"><span class="text-gray-600 font-medium pr-4 break-words w-2/3 leading-snug">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 whitespace-nowrap text-right w-1/3">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
+                komposisiHTML += `<li class="flex justify-between items-start text-[15px] py-1.5 border-b border-gray-100 dark:border-gray-700 last:border-0"><span class="text-gray-600 dark:text-gray-400 font-medium pr-4 break-words w-2/3 leading-snug">- ${det.bahan_baku.nama}</span> <span class="font-bold text-gray-800 dark:text-gray-200 whitespace-nowrap text-right w-1/3">${det.qty} ${det.bahan_baku.satuan}</span></li>`;
             }
         });
         const currentYield = menu.yield || 1;
         const costPerPorsiBase = (totalBiayaBahan / currentYield);
-
         const overhead = appSettings.overhead_type === 'persen' 
             ? (costPerPorsiBase * (appSettings.overhead_value / 100)) 
             : appSettings.overhead_value;
-
         const hppPerPorsi = costPerPorsiBase + overhead;
-
         return {
             ...menu,
             yield: currentYield,
@@ -1045,24 +1117,27 @@ async function loadDirektori() {
             overheadValue: appSettings.overhead_value
         };
     });
-
     renderCatalogDirektori();
     renderTableSummary();
     renderDashboardAnalitika();
+    if (document.getElementById('tab-dashboard').classList.contains('active')) {
+        updateDashboardEngineering();
+    }
+    if (document.getElementById('tab-data-penjualan').classList.contains('active')) {
+        renderTablePenjualanInput();
+    }
 }
 
-// ---------- RENDER DIRECTORY (RECIPE CARD) ----------
+// ==================== RENDER DIRECTORY ====================
 function renderCatalogDirektori() {
     let processedData = [...cachedResepSummaryData];
     const searchKey = document.getElementById('search-resep').value.toLowerCase();
     const filterKat = document.getElementById('filter-kategori-direktori').value;
     if (filterKat !== 'all') processedData = processedData.filter(m => m.kategori === filterKat);
     if (searchKey) processedData = processedData.filter(m => m.nama.toLowerCase().includes(searchKey) || (m.kategori && m.kategori.toLowerCase().includes(searchKey)) || (m.sub_kategori && m.sub_kategori.toLowerCase().includes(searchKey)));
-
     const wrapper = document.getElementById('recipe-wrapper');
     wrapper.innerHTML = '';
-    if (processedData.length === 0) { wrapper.innerHTML = `<div class="w-full text-center py-20 text-gray-400 italic">Data resep menu kosong atau tidak ditemukan.</div>`; return; }
-
+    if (processedData.length === 0) { wrapper.innerHTML = `<div class="w-full text-center py-20 text-gray-400 dark:text-gray-500 italic">Data resep menu kosong atau tidak ditemukan.</div>`; return; }
     const groupedData = {};
     processedData.forEach(menu => {
         const kat = menu.kategori && menu.kategori !== '-' ? menu.kategori.toUpperCase() : 'UNCATEGORIZED';
@@ -1071,35 +1146,31 @@ function renderCatalogDirektori() {
         if (!groupedData[kat][sub]) groupedData[kat][sub] = [];
         groupedData[kat][sub].push(menu);
     });
-
     const canEdit = hasRole('senior_bar');
     Object.keys(groupedData).sort().forEach(kat => {
-        let html = `<div class="mb-12"><h2 class="text-3xl font-black text-gray-800 mb-6 border-b-4 border-blue-600 inline-block pr-8 pb-1 tracking-tight uppercase">${kat}</h2>`;
+        let html = `<div class="mb-12"><h2 class="text-3xl font-black text-gray-800 dark:text-white mb-6 border-b-4 border-[#FF3B30] inline-block pr-8 pb-1 tracking-tight uppercase">${kat}</h2>`;
         Object.keys(groupedData[kat]).sort().forEach(sub => {
             const cardBgColor = getCardGradient(sub);
-            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 mb-5 flex items-center"><span class="bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
-
+            html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-5 flex items-center"><span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
             groupedData[kat][sub].forEach(menu => {
                 let hppColor = menu.hppPersen > appSettings.hpp_limit ? 'text-red-500' : 'text-emerald-600';
                 let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-600';
-
                 let ovhText = '';
                 if (menu.overheadValue > 0) {
                     if (menu.overheadType === 'persen') {
-                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${menu.overheadValue}% dari HPP bahan</div>`;
+                        ovhText = `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">+ Overhead: ${menu.overheadValue}% dari HPP bahan</div>`;
                     } else {
-                        ovhText = `<div class="text-xs text-gray-400 mt-0.5">+ Overhead: ${formatRp(menu.overhead)}</div>`;
+                        ovhText = `<div class="text-xs text-gray-400 dark:text-gray-500 mt-0.5">+ Overhead: ${formatRp(menu.overhead)}</div>`;
                     }
                 }
-
                 html += `
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
+                    <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-visible relative hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group flex flex-col">
                         ${canEdit ? `<div class="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <button onclick="toggleKebabMenu(event, 'drop-r-${menu.id}')" class="kebab-btn">⋮</button>
-                            <div id="drop-r-${menu.id}" class="dropdown-menu hidden">
-                                <button onclick="bukaModalEditResep(${JSON.stringify(menu).replace(/"/g, '&quot;')})" class="text-blue-600">📝 Edit</button>
-                                <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="text-amber-600">📋 Duplicate</button>
-                                <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="text-red-600 border-t">🗑️ Hapus</button>
+                            <button onclick="toggleKebabMenu(event, 'drop-r-${menu.id}')" class="kebab-btn bg-white/90 dark:bg-gray-700/90 backdrop-blur hover:bg-white dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 w-8 h-8 rounded-lg font-bold shadow-md border border-gray-200 dark:border-gray-600">⋮</button>
+                            <div id="drop-r-${menu.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-30">
+                                <button onclick="bukaModalEditResep(${JSON.stringify(menu).replace(/"/g, '&quot;')})" class="w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit</button>
+                                <button onclick="duplikasiResepCard(${menu.id}, '${menu.nama.replace(/'/g, "\\'")}')" class="w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/30 font-bold text-amber-600 dark:text-amber-400">📋 Duplicate</button>
+                                <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700">🗑️ Hapus</button>
                             </div>
                         </div>` : ''}
                         <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl relative">
@@ -1107,18 +1178,18 @@ function renderCatalogDirektori() {
                             <div class="absolute bottom-5 right-5 text-xs font-semibold bg-white/20 px-2 py-1 rounded backdrop-blur">YIELD: ${menu.yield}</div>
                         </div>
                         <div class="p-5 md:p-6 flex-grow flex flex-col">
-                            <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 italic">Tanpa komposisi</li>'}</ul>
-                            <div class="bg-gray-50 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 mt-auto">
-                                <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">Harga Jual:</span><span class="font-bold text-gray-800">${formatRp(menu.harga_jual)}</span></div>
-                                <div class="flex justify-between items-start border-t border-gray-200 pt-2">
-                                    <span class="text-gray-500 font-medium">HPP / Porsi:</span>
+                            <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 dark:text-gray-500 italic">Tanpa komposisi</li>'}</ul>
+                            <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 dark:border-gray-600 mt-auto">
+                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">Harga Jual:</span><span class="font-bold text-gray-800 dark:text-gray-200">${formatRp(menu.harga_jual)}</span></div>
+                                <div class="flex justify-between items-start border-t border-gray-200 dark:border-gray-600 pt-2">
+                                    <span class="text-gray-500 dark:text-gray-400 font-medium">HPP / Porsi:</span>
                                     <div class="text-right">
-                                        <span class="font-bold text-gray-800 block">${formatRp(menu.totalCost)}</span>
+                                        <span class="font-bold text-gray-800 dark:text-gray-200 block">${formatRp(menu.totalCost)}</span>
                                         ${ovhText}
                                     </div>
                                 </div>
-                                <div class="flex justify-between items-center border-t border-gray-200 pt-2"><span class="text-gray-500 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
-                                <div class="flex justify-between items-center"><span class="text-gray-500 font-medium">% HPP:</span><span class="font-black text-lg ${hppColor}">${menu.hppPersen.toFixed(2)}%</span></div>
+                                <div class="flex justify-between items-center border-t border-gray-200 dark:border-gray-600 pt-2"><span class="text-gray-500 dark:text-gray-400 font-medium">Margin:</span><span class="font-bold ${marginColor}">${formatRp(menu.margin)}</span></div>
+                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">% HPP:</span><span class="font-black text-lg ${hppColor}">${menu.hppPersen.toFixed(2)}%</span></div>
                             </div>
                         </div>
                     </div>
@@ -1131,17 +1202,15 @@ function renderCatalogDirektori() {
     });
 }
 
-// ---------- SUMMARY TABLE ----------
+// ==================== SUMMARY TABLE ====================
 function renderTableSummary() {
     const tbody = document.getElementById('table-summary-body');
     if (!tbody) return;
-
     let sData = [...cachedResepSummaryData];
     const searchVal = document.getElementById('search-summary').value.toLowerCase();
     const filterKat = document.getElementById('filter-summary-kat').value;
     if (searchVal) sData = sData.filter(m => m.nama.toLowerCase().includes(searchVal));
     if (filterKat !== 'all') sData = sData.filter(m => m.kategori === filterKat);
-
     sData.sort((a, b) => {
         let valA = a[summarySortKey] !== undefined ? a[summarySortKey] : '';
         let valB = b[summarySortKey] !== undefined ? b[summarySortKey] : '';
@@ -1151,15 +1220,12 @@ function renderTableSummary() {
         if (valA > valB) return summarySortAsc ? 1 : -1;
         return 0;
     });
-
     tbody.innerHTML = '';
     if (sData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 italic">Tidak ada resep data summary.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada resep data summary.</td></tr>`;
         return;
     }
-
     const canEditResep = hasRole('senior_bar');
-
     const thCheckbox = document.getElementById('th-checkbox-summary');
     const btnMassal = document.getElementById('btn-delete-massal');
     if (thCheckbox) {
@@ -1170,40 +1236,38 @@ function renderTableSummary() {
         if (canEditResep) btnMassal.classList.remove('hidden');
         else btnMassal.classList.add('hidden');
     }
-
     sData.forEach(m => {
-        let textHppColor = m.hppPersen > appSettings.hpp_limit ? 'text-red-600 font-black' : 'text-emerald-600 font-bold';
+        let textHppColor = m.hppPersen > appSettings.hpp_limit ? 'text-red-600 dark:text-red-400 font-black' : 'text-emerald-600 dark:text-emerald-400 font-bold';
         const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50 transition-colors';
-
+        row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors';
         let html = '';
         if (canEditResep) {
-            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="summary-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-400" value="${m.id}" /></td>`;
+            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="summary-checkbox rounded border-gray-300 text-[#FF3B30] focus:ring-[#FF3B30]" value="${m.id}" /></td>`;
         }
         html += `
-            <td class="p-4 font-bold text-gray-800">${m.nama}</td>
-            <td class="p-4 text-gray-600 text-xs font-semibold"><span class="bg-gray-100 border px-2 py-1 rounded-md">${m.kategori}</span></td>
-            <td class="p-4 text-gray-500 text-xs">${m.sub_kategori}</td>
-            <td class="p-4 text-right font-semibold text-gray-700">${formatRp(m.harga_jual)}</td>
-            <td class="p-4 text-right font-semibold text-blue-600">${formatRp(m.totalCost)}</td>
+            <td class="p-4 font-bold text-gray-800 dark:text-gray-200">${m.nama}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400 text-xs font-semibold"><span class="bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 px-2 py-1 rounded-md">${m.kategori}</span></td>
+            <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${m.sub_kategori}</td>
+            <td class="p-4 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(m.harga_jual)}</td>
+            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(m.totalCost)}</td>
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
-            <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500':'text-emerald-600'}">${formatRp(m.margin)}</td>
+            <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500 dark:text-red-400':'text-emerald-600 dark:text-emerald-400'}">${formatRp(m.margin)}</td>
         `;
         html += `<td class="p-4 text-center"><div class="relative inline-block">`;
         if (canEditResep) {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden">
-                    <button onclick="infoResepCard(${m.id})" class="text-blue-600">ℹ️ Info</button>
-                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="text-blue-600 border-t">📝 Edit</button>
-                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="text-red-600 border-t">🗑️ Hapus</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden" style="top:100%;">
+                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">ℹ️ Info</button>
+                    <button onclick="bukaModalEditResep(${JSON.stringify(m).replace(/"/g, '&quot;')})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400 border-t border-gray-100 dark:border-gray-700">📝 Edit</button>
+                    <button onclick="aksiHapusResep(${m.id}, '${m.nama}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700 mt-1">🗑️ Hapus</button>
                 </div>
             `;
         } else {
             html += `
-                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn">⋮</button>
-                <div id="drop-summary-${m.id}" class="dropdown-menu hidden">
-                    <button onclick="infoResepCard(${m.id})" class="text-blue-600">ℹ️ Info</button>
+                <button onclick="toggleKebabMenu(event, 'drop-summary-${m.id}')" class="kebab-btn bg-white dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                <div id="drop-summary-${m.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-36 py-2 text-sm text-gray-700 dark:text-gray-300 z-[70] overflow-hidden" style="top:100%;">
+                    <button onclick="infoResepCard(${m.id})" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">ℹ️ Info</button>
                 </div>
             `;
         }
@@ -1211,7 +1275,6 @@ function renderTableSummary() {
         row.innerHTML = html;
         tbody.appendChild(row);
     });
-
     document.querySelectorAll('#summary-table .sortable').forEach(th => {
         const key = th.dataset.sort;
         const icon = th.querySelector('.sort-icon');
@@ -1221,11 +1284,9 @@ function renderTableSummary() {
             icon.textContent = '▽';
         }
     });
-
     const selectAll = document.getElementById('select-all-summary');
     if (selectAll) selectAll.checked = false;
 }
-
 function infoResepCard(id) {
     const menu = cachedResepSummaryData.find(m => m.id === id);
     if (!menu) return alert('Data tidak ditemukan');
@@ -1252,12 +1313,10 @@ function infoResepCard(id) {
     document.getElementById('info-resep-detail').innerHTML = detailHtml;
     document.getElementById('modal-info-resep').classList.remove('hidden');
 }
-
 function toggleSelectAllSummary() {
     const checked = document.getElementById('select-all-summary').checked;
     document.querySelectorAll('.summary-checkbox').forEach(cb => cb.checked = checked);
 }
-
 async function hapusMassalResep() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const checkboxes = document.querySelectorAll('.summary-checkbox:checked');
@@ -1279,57 +1338,51 @@ async function hapusMassalResep() {
     }
 }
 
-// ---------- DASHBOARD ----------
+// ==================== DASHBOARD ====================
 function renderDashboardAnalitika() {
     if (!document.getElementById('dash-total-menu')) return;
-
     const countMenu = cachedResepSummaryData.length;
     const countBB = bahanBakuList.length;
-
     let totalSumHpp = 0, criticalCount = 0;
     cachedResepSummaryData.forEach(m => {
         totalSumHpp += m.hppPersen;
         if (m.hppPersen > appSettings.hpp_limit) criticalCount++;
     });
-
     const avgHpp = countMenu > 0 ? (totalSumHpp / countMenu) : 0;
-
     document.getElementById('dash-total-menu').innerText = countMenu;
     document.getElementById('dash-total-bb').innerText = countBB;
     document.getElementById('dash-avg-hpp').innerText = avgHpp.toFixed(1) + '%';
     document.getElementById('dash-alert-hpp').innerText = criticalCount;
-
     const topMarginBody = document.getElementById('dash-top-margin');
     let marginSorted = [...cachedResepSummaryData].sort((a, b) => b.margin - a.margin).slice(0, 5);
     topMarginBody.innerHTML = '';
-    if (marginSorted.length === 0) topMarginBody.innerHTML = `<tr><td class="text-center p-4 italic text-gray-400">Data menu belum siap.</td></tr>`;
+    if (marginSorted.length === 0) topMarginBody.innerHTML = `<tr><td class="text-center p-4 italic text-gray-400 dark:text-gray-500">Data menu belum siap.</td></tr>`;
     marginSorted.forEach(m => {
         topMarginBody.innerHTML += `
             <tr class="py-2 flex justify-between items-center text-sm">
-                <td class="font-bold text-gray-700">${m.nama}</td>
-                <td class="font-black text-emerald-600 text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400">profit</span></td>
+                <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
+                <td class="font-black text-emerald-600 dark:text-emerald-400 text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">profit</span></td>
             </tr>
         `;
     });
-
     const criticalBody = document.getElementById('dash-critical-hpp');
     let criticalSorted = cachedResepSummaryData.filter(m => m.hppPersen > appSettings.hpp_limit).sort((a, b) => b.hppPersen - a.hppPersen);
     criticalBody.innerHTML = '';
     if (criticalSorted.length === 0) {
-        criticalBody.innerHTML = `<tr><td class="p-4 text-center text-xs text-emerald-600 font-bold bg-emerald-50 rounded-xl border border-emerald-100">✨ Selamat! Seluruh resep terkendali aman di bawah threshold ${appSettings.hpp_limit}%.</td></tr>`;
+        criticalBody.innerHTML = `<tr><td class="p-4 text-center text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">✨ Selamat! Seluruh resep terkendali aman di bawah threshold ${appSettings.hpp_limit}%.</td></tr>`;
     } else {
         criticalSorted.forEach(m => {
             criticalBody.innerHTML += `
                 <tr class="py-2 flex justify-between items-center text-sm">
-                    <td class="font-bold text-gray-700">${m.nama}</td>
-                    <td class="font-black text-red-600 text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400">HPP</span></td>
+                    <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
+                    <td class="font-black text-red-600 dark:text-red-400 text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400 dark:text-gray-500">HPP</span></td>
                 </tr>
             `;
         });
     }
 }
 
-// ---------- AKSI HAPUS RESEP ----------
+// ==================== AKSI HAPUS RESEP ====================
 async function aksiHapusResep(id, nama) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     if (confirm(`Yakin hapus resep "${nama}"?`)) {
@@ -1340,7 +1393,7 @@ async function aksiHapusResep(id, nama) {
     }
 }
 
-// ---------- EDIT RESEP ----------
+// ==================== EDIT RESEP ====================
 async function bukaModalEditResep(menuObj) {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     await loadDropdownBahanBaku('edit');
@@ -1361,7 +1414,6 @@ async function bukaModalEditResep(menuObj) {
     renderKomposisi('edit');
     document.getElementById('modal-edit-resep').classList.remove('hidden');
 }
-
 async function simpanEditResep() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const resepId = document.getElementById('edit-r-id').value;
@@ -1382,45 +1434,44 @@ async function simpanEditResep() {
     loadDirektori();
 }
 
-// ---------- IMPORT / EXPORT ----------
+// ==================== IMPORT / EXPORT ====================
 function initiateImport(event, type) {
     fileImportTertunda = event.target.files[0];
     if (!fileImportTertunda) return;
     jenisImportTertunda = type;
     document.getElementById('modal-import-option').classList.remove('hidden');
 }
-
 function batalImport() {
     fileImportTertunda = null;
     jenisImportTertunda = '';
     document.getElementById('import-bb-file').value = '';
     document.getElementById('import-resep-file').value = '';
     if (document.getElementById('import-kat-file')) document.getElementById('import-kat-file').value = '';
+    if (document.getElementById('import-penjualan-file')) document.getElementById('import-penjualan-file').value = '';
     closeModal('modal-import-option');
 }
-
 function jalankanImport(mode) {
     closeModal('modal-import-option');
     showLoading();
     if (jenisImportTertunda === 'bb') eksekusiImportBahanBaku(mode);
     else if (jenisImportTertunda === 'resep') eksekusiImportResep(mode);
+    else if (jenisImportTertunda === 'penjualan') eksekusiImportPenjualan(mode);
     else eksekusiImportKategori(mode);
 }
 
+// ==================== BAHAN BAKU IMPORT/EXPORT ====================
 function downloadTemplateBahanBaku() {
     const ws = XLSX.utils.json_to_sheet([{ "Nama Bahan": "Susu UHT", "Satuan Beli": "Karton", "Harga Beli": 240000, "Nilai Konversi (Yield)": 12000, "Satuan Pemakaian Resep": "ml" }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_Bahan_Baku.xlsx");
 }
-
 function exportBahanBakuToExcel() {
     const ws = XLSX.utils.json_to_sheet(bahanBakuList.map(i => ({ "ID": i.id, "Nama Bahan": i.nama, "Satuan Beli": i.satuan_beli, "Harga Beli": i.harga_beli, "Konversi": i.nilai_konversi, "Satuan Resep": i.satuan, "Harga per Satuan": i.harga })));
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Data");
     XLSX.writeFile(wb, "BahanBaku_Export.xlsx");
 }
-
 function eksekusiImportBahanBaku(mode) {
     if (!hasRole('admin')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1447,12 +1498,10 @@ function eksekusiImportBahanBaku(mode) {
                     const eId = nMap[r.nama.toLowerCase()];
                     if (eId) {
                         const { error } = await supabaseClient.from('bahan_baku').update(r).eq('id', eId);
-                        if (error) failCount++;
-                        else successCount++;
+                        if (error) failCount++; else successCount++;
                     } else {
                         const { error } = await supabaseClient.from('bahan_baku').insert([r]);
-                        if (error) failCount++;
-                        else successCount++;
+                        if (error) failCount++; else successCount++;
                     }
                 }
             }
@@ -1469,13 +1518,13 @@ function eksekusiImportBahanBaku(mode) {
     reader.readAsArrayBuffer(fileImportTertunda);
 }
 
+// ==================== KATEGORI IMPORT/EXPORT ====================
 function downloadTemplateKategori() {
     const ws = XLSX.utils.json_to_sheet([{ "Nama": "Coffee Series", "Jenis": "Kategori" }, { "Nama": "Espresso Based", "Jenis": "Sub-Kategori" }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template_Kategori");
     XLSX.writeFile(wb, "Template_Kategori_Master.xlsx");
 }
-
 function exportKategoriToExcel() {
     const listGabung = [
         ...listKategori.map(k => ({ "ID": k.id, "Nama": k.nama, "Jenis": "Kategori" })),
@@ -1486,7 +1535,6 @@ function exportKategoriToExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Kategori_DB");
     XLSX.writeFile(wb, "Kategori_Export.xlsx");
 }
-
 function eksekusiImportKategori(mode) {
     if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1506,8 +1554,7 @@ function eksekusiImportKategori(mode) {
                     successCount++;
                 } else {
                     const { error } = await supabaseClient.from('kategori_db').insert([r]);
-                    if (error) failCount++;
-                    else successCount++;
+                    if (error) failCount++; else successCount++;
                 }
             }
             hideLoading();
@@ -1523,13 +1570,13 @@ function eksekusiImportKategori(mode) {
     reader.readAsArrayBuffer(fileImportTertunda);
 }
 
+// ==================== RESEP IMPORT/EXPORT ====================
 function downloadTemplateResep() {
     const ws = XLSX.utils.json_to_sheet([{ "Nama Menu": "Iced Choco Banana", "Kategori": "Beverage", "Sub Kategori": "Non-Coffee", "Harga Jual": 28000, "Yield (Porsi)": 1, "Nama Bahan Baku": "Fresh Milk UHT", "Qty": 160 }]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Template");
     XLSX.writeFile(wb, "Template_Resep.xlsx");
 }
-
 async function exportResepToExcel() {
     const { data } = await supabaseClient.from('resep').select(`nama,kategori,sub_kategori,harga_jual,yield,resep_detail(qty,bahan_baku(nama,satuan,harga))`);
     let rec = [];
@@ -1539,7 +1586,6 @@ async function exportResepToExcel() {
     XLSX.utils.book_append_sheet(wb, ws, "Resep");
     XLSX.writeFile(wb, "Resep_Export.xlsx");
 }
-
 function eksekusiImportResep(mode) {
     if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
     const reader = new FileReader();
@@ -1579,8 +1625,7 @@ function eksekusiImportResep(mode) {
                     const { error: detailErr } = await supabaseClient.from('resep_detail').insert(grp[k].ing.map(i => ({ resep_id: rId, bahan_baku_id: i.bahan_baku_id, qty: i.qty })));
                     if (detailErr) hasError = true;
                 }
-                if (hasError) failCount++;
-                else successCount++;
+                if (hasError) failCount++; else successCount++;
             }
             hideLoading();
             batalImport();
@@ -1593,6 +1638,469 @@ function eksekusiImportResep(mode) {
         }
     };
     reader.readAsArrayBuffer(fileImportTertunda);
+}
+
+// ==================== PENJUALAN ====================
+function initBulanTahunDropdowns() {
+    const bulanSelects = ['jual-bulan', 'filter-data-bulan', 'dash-filter-bulan'];
+    const bulanNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+    bulanSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="">Pilih Bulan</option>';
+        bulanNames.forEach((name, i) => {
+            el.innerHTML += `<option value="${i+1}">${name}</option>`;
+        });
+        if (id === 'jual-bulan') {
+            el.value = new Date().getMonth() + 1;
+        }
+    });
+    const tahunSelects = ['jual-tahun', 'filter-data-tahun', 'dash-filter-tahun'];
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({length: 10}, (_, i) => currentYear - i);
+    tahunSelects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="">Pilih Tahun</option>';
+        years.forEach(y => {
+            el.innerHTML += `<option value="${y}">${y}</option>`;
+        });
+        if (id === 'jual-tahun' || id === 'dash-filter-tahun') el.value = currentYear;
+    });
+}
+async function loadMenuDropdownPenjualan() {
+    const { data, error } = await supabaseClient.from('resep').select('id, nama, harga_jual').order('nama');
+    if (error) return;
+    const selects = ['filter-data-menu'];
+    selects.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.innerHTML = '<option value="all">Semua Menu</option>';
+        data.forEach(m => {
+            el.innerHTML += `<option value="${m.id}">${m.nama}</option>`;
+        });
+    });
+}
+function renderTablePenjualanInput() {
+    const tbody = document.getElementById('table-penjualan-input-body');
+    if (!tbody) return;
+    const filterKat = document.getElementById('jual-filter-kategori').value;
+    let menus = cachedResepSummaryData;
+    if (filterKat !== 'all') {
+        menus = menus.filter(m => m.kategori === filterKat);
+    }
+    const grouped = {};
+    menus.forEach(menu => {
+        const sub = menu.sub_kategori || 'Uncategorized';
+        if (!grouped[sub]) grouped[sub] = [];
+        grouped[sub].push(menu);
+    });
+    menus.forEach(menu => {
+        if (!penjualanInputData[menu.id]) {
+            penjualanInputData[menu.id] = { qty: '', harga_jual: menu.harga_jual || 0 };
+        }
+    });
+    tbody.innerHTML = '';
+    if (menus.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada menu untuk kategori ini.</td></tr>`;
+        return;
+    }
+    Object.keys(grouped).sort().forEach(sub => {
+        tbody.innerHTML += `<tr class="bg-gray-50 dark:bg-gray-700/50"><td colspan="5" class="p-2 font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">📂 ${sub}</td></tr>`;
+        grouped[sub].forEach(menu => {
+            const data = penjualanInputData[menu.id] || { qty: '', harga_jual: menu.harga_jual || 0 };
+            tbody.innerHTML += `
+                <tr class="border-b border-gray-100 dark:border-gray-700 hover:bg-blue-50/30 dark:hover:bg-blue-900/20 transition-colors">
+                    <td class="p-3 font-semibold text-gray-700 dark:text-gray-300">${menu.nama}</td>
+                    <td class="p-3 text-gray-600 dark:text-gray-400 text-sm">${menu.kategori}</td>
+                    <td class="p-3 text-gray-500 dark:text-gray-400 text-sm">${menu.sub_kategori || '-'}</td>
+                    <td class="p-3 text-center">
+                        <input type="number" min="0" step="1" value="${data.qty}" 
+                            class="w-24 p-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-center text-sm focus:ring-2 focus:ring-[#FF3B30] outline-none dark:bg-gray-700 dark:text-white"
+                            oninput="updatePenjualanInput(${menu.id}, 'qty', this.value)" />
+                    </td>
+                    <td class="p-3 text-right">
+                        <div class="flex justify-end items-center gap-1">
+                            <span class="text-xs text-gray-500 dark:text-gray-400">Rp</span>
+                            <input type="text" value="${data.harga_jual ? new Intl.NumberFormat('id-ID').format(data.harga_jual) : ''}" 
+                                class="w-32 p-1.5 border border-gray-300 dark:border-gray-600 rounded-lg text-right text-sm focus:ring-2 focus:ring-[#FF3B30] outline-none dark:bg-gray-700 dark:text-white"
+                                oninput="formatRupiahInput(this); updatePenjualanInput(${menu.id}, 'harga', this.value)" />
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+}
+function updatePenjualanInput(id, field, value) {
+    if (!penjualanInputData[id]) {
+        const menu = cachedResepSummaryData.find(m => m.id === id);
+        penjualanInputData[id] = { qty: '', harga_jual: menu ? menu.harga_jual : 0 };
+    }
+    if (field === 'qty') {
+        penjualanInputData[id].qty = value;
+    } else {
+        penjualanInputData[id].harga_jual = getNilaiAsli(value);
+    }
+}
+async function simpanPenjualanMassal() {
+    if (!hasRole('senior_bar')) return alert('Akses ditolak.');
+    const bulan = parseInt(document.getElementById('jual-bulan').value);
+    const tahun = parseInt(document.getElementById('jual-tahun').value);
+    if (!bulan || !tahun) {
+        return alert('Pilih bulan dan tahun terlebih dahulu!');
+    }
+    const dataToInsert = [];
+    for (const [id, data] of Object.entries(penjualanInputData)) {
+        const qty = parseInt(data.qty) || 0;
+        const harga = data.harga_jual || 0;
+        if (qty > 0 && harga > 0) {
+            dataToInsert.push({
+                resep_id: parseInt(id),
+                bulan: bulan,
+                tahun: tahun,
+                qty: qty,
+                harga_jual: harga
+            });
+        }
+    }
+    if (dataToInsert.length === 0) {
+        return alert('Tidak ada data penjualan yang valid (Qty > 0 dan Harga > 0).');
+    }
+    const { data: existing } = await supabaseClient
+        .from('penjualan')
+        .select('resep_id')
+        .eq('bulan', bulan)
+        .eq('tahun', tahun);
+    const existingIds = new Set(existing ? existing.map(e => e.resep_id) : []);
+    const conflictIds = dataToInsert.filter(d => existingIds.has(d.resep_id)).map(d => d.resep_id);
+    if (conflictIds.length > 0) {
+        const conflictMenus = cachedResepSummaryData
+            .filter(m => conflictIds.includes(m.id))
+            .map(m => m.nama)
+            .join(', ');
+        if (!confirm(`Data penjualan untuk bulan ${bulan}/${tahun} sudah ada untuk menu: ${conflictMenus}.\n\nSimpan akan menimpa data yang sudah ada. Lanjutkan?`)) {
+            return;
+        }
+        await supabaseClient
+            .from('penjualan')
+            .delete()
+            .eq('bulan', bulan)
+            .eq('tahun', tahun)
+            .in('resep_id', conflictIds);
+    }
+    showLoading();
+    const { error } = await supabaseClient.from('penjualan').insert(dataToInsert);
+    hideLoading();
+    if (error) {
+        alert('Gagal menyimpan penjualan: ' + error.message);
+    } else {
+        alert(`Berhasil menyimpan ${dataToInsert.length} data penjualan!`);
+        for (const id of Object.keys(penjualanInputData)) {
+            penjualanInputData[id].qty = '';
+        }
+        renderTablePenjualanInput();
+        loadDataPenjualan();
+    }
+}
+function downloadTemplatePenjualan() {
+    const ws = XLSX.utils.json_to_sheet([
+        { "Nama Menu": "Iced Choco Banana", "Kategori": "Beverage", "Sub Kategori": "Non-Coffee", "Qty Terjual": 150, "Harga Jual": 28000 },
+        { "Nama Menu": "Cappuccino", "Kategori": "Beverage", "Sub Kategori": "Coffee", "Qty Terjual": 200, "Harga Jual": 32000 }
+    ]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Template Penjualan");
+    XLSX.writeFile(wb, "Template_Penjualan.xlsx");
+}
+function initiateImportPenjualan(event) {
+    fileImportTertunda = event.target.files[0];
+    if (!fileImportTertunda) return;
+    jenisImportTertunda = 'penjualan';
+    document.getElementById('modal-import-option').classList.remove('hidden');
+}
+function eksekusiImportPenjualan(mode) {
+    if (!hasRole('senior_bar')) { hideLoading(); alert('Akses ditolak.'); batalImport(); return; }
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        try {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]]);
+            if (rows.length === 0) { hideLoading(); alert("Data Excel kosong!"); batalImport(); return; }
+            const { data: menus } = await supabaseClient.from('resep').select('id, nama, kategori, sub_kategori');
+            const menuMap = {};
+            menus.forEach(m => {
+                menuMap[m.nama.toLowerCase().trim()] = m.id;
+            });
+            const dataToInsert = [];
+            let skipped = 0;
+            rows.forEach(r => {
+                const namaMenu = String(r["Nama Menu"] || "").trim();
+                const qty = parseInt(r["Qty Terjual"] || 0);
+                const harga = parseFloat(r["Harga Jual"] || 0);
+                if (!namaMenu || qty <= 0 || harga <= 0) { skipped++; return; }
+                const menuId = menuMap[namaMenu.toLowerCase()];
+                if (!menuId) { skipped++; return; }
+                const bulan = parseInt(document.getElementById('jual-bulan').value);
+                const tahun = parseInt(document.getElementById('jual-tahun').value);
+                if (!bulan || !tahun) {
+                    alert('Pilih bulan dan tahun terlebih dahulu sebelum import!');
+                    throw new Error('Bulan/tahun tidak dipilih');
+                }
+                dataToInsert.push({
+                    resep_id: menuId,
+                    bulan: bulan,
+                    tahun: tahun,
+                    qty: qty,
+                    harga_jual: harga
+                });
+            });
+            if (dataToInsert.length === 0) {
+                hideLoading();
+                alert(`Tidak ada data valid untuk diimport. ${skipped} baris dilewati.`);
+                batalImport();
+                return;
+            }
+            const bulan = parseInt(document.getElementById('jual-bulan').value);
+            const tahun = parseInt(document.getElementById('jual-tahun').value);
+            const { data: existing } = await supabaseClient
+                .from('penjualan')
+                .select('resep_id')
+                .eq('bulan', bulan)
+                .eq('tahun', tahun);
+            const existingIds = new Set(existing ? existing.map(e => e.resep_id) : []);
+            const conflictIds = dataToInsert.filter(d => existingIds.has(d.resep_id)).map(d => d.resep_id);
+            if (conflictIds.length > 0) {
+                if (!confirm(`Data penjualan untuk bulan ${bulan}/${tahun} sudah ada untuk beberapa menu.\n\nSimpan akan menimpa data yang sudah ada. Lanjutkan?`)) {
+                    hideLoading();
+                    batalImport();
+                    return;
+                }
+                await supabaseClient
+                    .from('penjualan')
+                    .delete()
+                    .eq('bulan', bulan)
+                    .eq('tahun', tahun)
+                    .in('resep_id', conflictIds);
+            }
+            const { error } = await supabaseClient.from('penjualan').insert(dataToInsert);
+            hideLoading();
+            batalImport();
+            if (error) {
+                alert('Gagal import penjualan: ' + error.message);
+            } else {
+                alert(`Berhasil import ${dataToInsert.length} data penjualan. ${skipped} baris dilewati.`);
+                loadDataPenjualan();
+                renderTablePenjualanInput();
+            }
+        } catch (err) {
+            hideLoading();
+            alert("Gagal mengolah file Excel: " + err.message);
+            batalImport();
+        }
+    };
+    reader.readAsArrayBuffer(fileImportTertunda);
+}
+function exportPenjualanToExcel() {
+    const bulan = document.getElementById('filter-data-bulan').value;
+    const tahun = document.getElementById('filter-data-tahun').value;
+    const menuId = document.getElementById('filter-data-menu').value;
+    let query = supabaseClient
+        .from('penjualan')
+        .select(`
+            id,
+            bulan,
+            tahun,
+            qty,
+            harga_jual,
+            resep:resep_id (id, nama, kategori, sub_kategori)
+        `);
+    if (bulan && bulan !== 'all') query = query.eq('bulan', parseInt(bulan));
+    if (tahun && tahun !== 'all') query = query.eq('tahun', parseInt(tahun));
+    if (menuId && menuId !== 'all') query = query.eq('resep_id', parseInt(menuId));
+    query.then(({ data, error }) => {
+        if (error) { alert('Gagal export: ' + error.message); return; }
+        if (!data || data.length === 0) { alert('Tidak ada data untuk diexport.'); return; }
+        const exportData = data.map(row => ({
+            "Menu": row.resep?.nama || 'Menu dihapus',
+            "Kategori": row.resep?.kategori || '-',
+            "Sub Kategori": row.resep?.sub_kategori || '-',
+            "Bulan": ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][row.bulan - 1] || row.bulan,
+            "Tahun": row.tahun,
+            "Qty Terjual": row.qty,
+            "Harga Jual": row.harga_jual,
+            "Total": row.qty * row.harga_jual
+        }));
+        const ws = XLSX.utils.json_to_sheet(exportData);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Data Penjualan");
+        XLSX.writeFile(wb, `Penjualan_${bulan || 'all'}_${tahun || 'all'}.xlsx`);
+    });
+}
+async function loadDataPenjualan() {
+    const bulan = document.getElementById('filter-data-bulan').value;
+    const tahun = document.getElementById('filter-data-tahun').value;
+    const menuId = document.getElementById('filter-data-menu').value;
+    let query = supabaseClient
+        .from('penjualan')
+        .select(`
+            id,
+            bulan,
+            tahun,
+            qty,
+            harga_jual,
+            resep:resep_id (id, nama, kategori, sub_kategori, harga_jual as harga_jual_resep)
+        `);
+    if (bulan && bulan !== 'all') query = query.eq('bulan', parseInt(bulan));
+    if (tahun && tahun !== 'all') query = query.eq('tahun', parseInt(tahun));
+    if (menuId && menuId !== 'all') query = query.eq('resep_id', parseInt(menuId));
+    const { data, error } = await query.order('tahun', { ascending: false }).order('bulan', { ascending: false });
+    if (error) { console.error('Error load penjualan:', error); return; }
+    const tbody = document.getElementById('table-penjualan-body');
+    tbody.innerHTML = '';
+    if (!data || data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada data penjualan.</td></tr>`;
+        return;
+    }
+    const canDelete = hasRole('senior_bar');
+    const thCheck = document.querySelector('#table-penjualan thead th:first-child');
+    if (thCheck) {
+        if (canDelete) thCheck.classList.remove('hidden');
+        else thCheck.classList.add('hidden');
+    }
+    data.forEach(row => {
+        const menu = row.resep;
+        const total = row.qty * row.harga_jual;
+        const bulanName = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'][row.bulan - 1] || row.bulan;
+        let html = '<tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">';
+        if (canDelete) {
+            html += `<td class="p-4 w-8 text-center"><input type="checkbox" class="penjualan-checkbox rounded border-gray-300 text-[#FF3B30] focus:ring-[#FF3B30]" value="${row.id}" /></td>`;
+        }
+        html += `
+            <td class="p-4 font-bold text-gray-800 dark:text-gray-200">${menu?.nama || 'Menu dihapus'}</td>
+            <td class="p-4 text-gray-600 dark:text-gray-400">${menu?.kategori || '-'}</td>
+            <td class="p-4">${bulanName}</td>
+            <td class="p-4">${row.tahun}</td>
+            <td class="p-4 text-right font-semibold">${row.qty}</td>
+            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(row.harga_jual)}</td>
+            <td class="p-4 text-right font-bold text-gray-800 dark:text-gray-200">${formatRp(total)}</td>
+            <td class="p-4 text-center">
+        `;
+        if (canDelete) {
+            html += `<button onclick="hapusPenjualan(${row.id})" class="text-red-500 dark:text-red-400 hover:text-red-700 font-bold text-lg">✕</button>`;
+        } else {
+            html += `<span class="text-gray-300">-</span>`;
+        }
+        html += `</td></tr>`;
+        tbody.innerHTML += html;
+    });
+    const btnMassal = document.querySelector('[onclick="hapusPenjualanTerpilih()"]');
+    if (btnMassal) {
+        if (canDelete) btnMassal.classList.remove('hidden');
+        else btnMassal.classList.add('hidden');
+    }
+}
+async function hapusPenjualan(id) {
+    if (!hasRole('senior_bar')) return alert('Akses ditolak.');
+    if (!confirm('Hapus data penjualan ini?')) return;
+    showLoading();
+    const { error } = await supabaseClient.from('penjualan').delete().eq('id', id);
+    hideLoading();
+    if (error) alert('Gagal hapus.');
+    else loadDataPenjualan();
+}
+async function hapusPenjualanTerpilih() {
+    if (!hasRole('senior_bar')) return alert('Akses ditolak.');
+    const checkboxes = document.querySelectorAll('.penjualan-checkbox:checked');
+    if (checkboxes.length === 0) return alert('Pilih data yang akan dihapus.');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    if (!confirm(`Hapus ${ids.length} data penjualan?`)) return;
+    showLoading();
+    const { error } = await supabaseClient.from('penjualan').delete().in('id', ids);
+    hideLoading();
+    if (error) alert('Gagal hapus massal.');
+    else loadDataPenjualan();
+}
+function toggleSelectAllPenjualan() {
+    const checked = document.getElementById('select-all-penjualan').checked;
+    document.querySelectorAll('.penjualan-checkbox').forEach(cb => cb.checked = checked);
+}
+
+// ==================== DASHBOARD ENGINEERING ====================
+async function updateDashboardEngineering() {
+    const bulan = document.getElementById('dash-filter-bulan').value;
+    const tahun = document.getElementById('dash-filter-tahun').value;
+    if (!bulan || !tahun) {
+        document.getElementById('dash-engineering-container').innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-center py-10">Pilih bulan dan tahun untuk melihat data engineering.</p>';
+        return;
+    }
+    const { data: penjualanData, error } = await supabaseClient
+        .from('penjualan')
+        .select('resep_id, qty, harga_jual')
+        .eq('bulan', parseInt(bulan))
+        .eq('tahun', parseInt(tahun));
+    if (error) {
+        console.error('Error ambil penjualan:', error);
+        return;
+    }
+    const salesMap = {};
+    penjualanData.forEach(p => {
+        if (!salesMap[p.resep_id]) salesMap[p.resep_id] = { qty: 0, totalHarga: 0 };
+        salesMap[p.resep_id].qty += p.qty;
+        salesMap[p.resep_id].totalHarga += p.qty * p.harga_jual;
+    });
+    const menus = cachedResepSummaryData;
+    const kategoriMap = {};
+    menus.forEach(menu => {
+        const kat = menu.kategori || 'Uncategorized';
+        if (!kategoriMap[kat]) kategoriMap[kat] = [];
+        kategoriMap[kat].push(menu);
+    });
+    const avgSalesPerKat = {};
+    Object.keys(kategoriMap).forEach(kat => {
+        const menusInKat = kategoriMap[kat];
+        const totalQty = menusInKat.reduce((sum, m) => sum + (salesMap[m.id]?.qty || 0), 0);
+        const countSold = menusInKat.filter(m => salesMap[m.id] && salesMap[m.id].qty > 0).length;
+        avgSalesPerKat[kat] = countSold > 0 ? totalQty / countSold : 0;
+    });
+    const container = document.getElementById('dash-engineering-container');
+    container.innerHTML = '';
+    if (Object.keys(kategoriMap).length === 0) {
+        container.innerHTML = '<p class="text-gray-400 dark:text-gray-500 text-center py-10">Belum ada kategori.</p>';
+        return;
+    }
+    Object.keys(kategoriMap).sort().forEach(kat => {
+        const menusInKat = kategoriMap[kat];
+        const avg = avgSalesPerKat[kat] || 0;
+        let html = `<div class="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 border border-gray-200 dark:border-gray-700">
+            <h4 class="font-bold text-lg text-gray-800 dark:text-white mb-3 flex items-center gap-2">
+                <span class="bg-[#FF3B30] text-white px-3 py-1 rounded-full text-sm">${kat}</span>
+                <span class="text-sm font-normal text-gray-500 dark:text-gray-400">Rata-rata penjualan: ${avg.toFixed(1)} porsi</span>
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        `;
+        menusInKat.forEach(menu => {
+            const sales = salesMap[menu.id];
+            const qty = sales?.qty || 0;
+            const isEngineering = (qty < avg * 0.5) && avg > 0;
+            const totalRevenue = sales?.totalHarga || 0;
+            html += `
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border ${isEngineering ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : 'border-gray-100 dark:border-gray-700'}">
+                    <div class="flex justify-between items-start">
+                        <span class="font-bold text-gray-700 dark:text-gray-300">${menu.nama}</span>
+                        ${isEngineering ? '<span class="text-xs font-bold bg-red-500 text-white px-2 py-0.5 rounded-full">🔧 Engineering</span>' : ''}
+                    </div>
+                    <div class="mt-2 space-y-1 text-sm">
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Qty Terjual</span><span class="font-bold">${qty}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Total Revenue</span><span class="font-bold">${formatRp(totalRevenue)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Margin / Porsi</span><span class="font-bold ${menu.margin < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatRp(menu.margin)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">% HPP</span><span class="font-bold ${menu.hppPersen > appSettings.hpp_limit ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${menu.hppPersen.toFixed(1)}%</span></div>
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div></div>`;
+        container.innerHTML += html;
+    });
 }
 
 // ---------- EVENT LISTENER ----------
@@ -1611,7 +2119,6 @@ document.addEventListener('click', function(e) {
         }
     }
 });
-
 document.addEventListener('click', function(e) {
     if (!e.target.closest('.kebab-btn') && !e.target.closest('[onclick*="toggleKebabMenu"]')) {
         document.querySelectorAll('.dropdown-menu').forEach(menu => menu.classList.add('hidden'));
@@ -1620,6 +2127,16 @@ document.addEventListener('click', function(e) {
 
 // ---------- ON LOAD ----------
 window.onload = async () => {
+    loadTheme();
     await inisialisasiAuth();
     await loadKategoriDB();
+    const bulanNow = new Date().getMonth() + 1;
+    const tahunNow = new Date().getFullYear();
+    document.getElementById('filter-data-bulan').value = bulanNow;
+    document.getElementById('filter-data-tahun').value = tahunNow;
+    
+    const savedTab = sessionStorage.getItem('activeTab');
+    if (savedTab && document.getElementById(savedTab)) {
+        setTimeout(() => switchTab(savedTab), 100);
+    }
 };
