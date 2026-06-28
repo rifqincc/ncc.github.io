@@ -303,6 +303,9 @@ body {
 .light .bg-gray-200 {
     background-color: #e2e8f0 !important;
 }
+.light .bg-gray-300 {
+    background-color: #d1d5db !important;
+}
 .light .border-gray-100 {
     border-color: #e2e8f0 !important;
 }
@@ -368,6 +371,48 @@ body {
 .light .bg-white .text-gray-500,
 .light .bg-gray-50 .text-gray-500 {
     color: #334155 !important;
+}
+
+/* === HPP CARD (bg-gray-800) IN LIGHT THEME === */
+.light .bg-gray-800 {
+    background-color: #e2e8f0 !important;
+}
+.light .bg-gray-800 *,
+.light .bg-gray-800 .text-gray-300,
+.light .bg-gray-800 .text-white,
+.light .bg-gray-800 .font-black,
+.light .bg-gray-800 .font-bold,
+.light .bg-gray-800 .text-emerald-400,
+.light .bg-gray-800 .text-blue-300,
+.light .bg-gray-800 .text-red-500 {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .text-gray-300 {
+    color: #334155 !important;
+}
+.light .bg-gray-800 .border-gray-600 {
+    border-color: #94a3b8 !important;
+}
+
+/* === DARK THEME HPP CARD === */
+.dark .bg-gray-800 {
+    background-color: #1e293b !important;
+}
+.dark .bg-gray-800 *,
+.dark .bg-gray-800 .text-gray-300,
+.dark .bg-gray-800 .text-white,
+.dark .bg-gray-800 .font-black,
+.dark .bg-gray-800 .font-bold,
+.dark .bg-gray-800 .text-emerald-400,
+.dark .bg-gray-800 .text-blue-300,
+.dark .bg-gray-800 .text-red-500 {
+    color: #f1f5f9 !important;
+}
+.dark .bg-gray-800 .text-gray-300 {
+    color: #94a3b8 !important;
+}
+.dark .bg-gray-800 .border-gray-600 {
+    border-color: #475569 !important;
 }
 
 /* INPUTS - LIGHT */
@@ -541,6 +586,9 @@ body {
 }
 .dark .bg-gray-200 {
     background-color: #334155 !important;
+}
+.dark .bg-gray-300 {
+    background-color: #475569 !important;
 }
 .dark .border-gray-100 {
     border-color: #334155 !important;
@@ -888,4 +936,59 @@ body {
 }
 .dark ::-webkit-scrollbar-thumb:hover {
     background: #64748b;
+}
+
+/* ===== PERBAIKAN KHUSUS UNTUK HPP CARD DI LIGHT THEME ===== */
+/* Bagian bg-gray-800 di dalam tab-hpp */
+.light .bg-gray-800.text-white {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .text-gray-300 {
+    color: #334155 !important;
+}
+.light .bg-gray-800 .text-white {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .font-black {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .font-bold.text-emerald-400 {
+    color: #0b7a4a !important;
+}
+.light .bg-gray-800 .font-bold.text-red-500 {
+    color: #b91c1c !important;
+}
+.light .bg-gray-800 .text-blue-300 {
+    color: #1e40af !important;
+}
+.light .bg-gray-800 .border-gray-600 {
+    border-color: #94a3b8 !important;
+}
+
+/* Untuk dark theme, bg-gray-800 tetap gelap dengan teks terang */
+.dark .bg-gray-800.text-white {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .text-gray-300 {
+    color: #94a3b8 !important;
+}
+.dark .bg-gray-800 .text-white {
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .font-black {
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .font-bold.text-emerald-400 {
+    color: #34d399 !important;
+}
+.dark .bg-gray-800 .font-bold.text-red-500 {
+    color: #f87171 !important;
+}
+.dark .bg-gray-800 .text-blue-300 {
+    color: #93c5fd !important;
+}
+.dark .bg-gray-800 .border-gray-600 {
+    border-color: #475569 !important;
 }
