@@ -47,8 +47,7 @@
                     <h1 class="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#1e3a5f] to-[#2d5a87] dark:from-[#f8fafc] dark:to-[#94a3b8] tracking-tight">F&B PRO</h1>
                 </div>
                 <div class="flex items-center gap-3">
-                    <span id="user-status" class="text-xs font-bold text-[#FF3B30] bg-[#FF3B30]/10 px-3 py-1.5 rounded-full shadow-inner border border-[#FF3B30]/20">🌟 Loading...</span>
-                    <button id="btn-logout" onclick="logoutAdmin()" class="bg-[#FF3B30] text-white px-5 py-1.5 rounded-full text-sm font-bold hover:bg-[#e0352a] hover:shadow-lg hover:-translate-y-0.5 transition-all">Logout</button>
+                    <!-- User status & logout dihapus, hanya hamburger -->
                     <button onclick="toggleMobileMenu()" class="bg-gray-100 dark:bg-gray-700 p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:text-[#FF3B30] focus:outline-none transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"></path></svg>
                     </button>
@@ -466,13 +465,13 @@
                     <div class="flex flex-wrap items-end gap-4">
                         <div class="flex-1 min-w-[150px]">
                             <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Kategori</label>
-                            <select id="discount-category" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white">
+                            <select id="discount-category" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white" onchange="updateDiscountSubcategory()">
                                 <option value="all">Semua Kategori</option>
                             </select>
                         </div>
                         <div class="flex-1 min-w-[150px]">
                             <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Sub Kategori</label>
-                            <select id="discount-subcategory" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white">
+                            <select id="discount-subcategory" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white" disabled>
                                 <option value="all">Semua Sub-Kategori</option>
                             </select>
                         </div>
@@ -511,19 +510,21 @@
                         <table class="w-full text-left text-sm whitespace-nowrap" id="discount-table">
                             <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">
                                 <tr>
-                                    <th class="p-3 font-bold">#</th>
-                                    <th class="p-3 font-bold">Nama Menu</th>
-                                    <th class="p-3 font-bold text-right">Harga Awal</th>
+                                    <th class="p-3 font-bold sortable-disc" data-sort="index"># <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc" data-sort="nama">Nama Menu <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc text-right" data-sort="harga_jual">Harga Awal <span class="sort-icon">▽</span></th>
                                     <th class="p-3 font-bold text-center">Diskon</th>
-                                    <th class="p-3 font-bold text-right">Harga Setelah</th>
-                                    <th class="p-3 font-bold text-right">HPP</th>
-                                    <th class="p-3 font-bold text-right">Margin Awal</th>
-                                    <th class="p-3 font-bold text-right">Margin Akhir</th>
-                                    <th class="p-3 font-bold text-center">% HPP Akhir</th>
+                                    <th class="p-3 font-bold sortable-disc text-right" data-sort="harga_diskon">Harga Setelah <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc text-right" data-sort="hpp">HPP <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc text-right" data-sort="margin_awal">Margin Awal <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc text-right" data-sort="margin_akhir">Margin Akhir <span class="sort-icon">▽</span></th>
+                                    <th class="p-3 font-bold sortable-disc text-center" data-sort="hpp_akhir">% HPP Akhir <span class="sort-icon">▽</span></th>
                                     <th class="p-3 font-bold text-center">Status</th>
                                 </tr>
                             </thead>
-                            <tbody id="discount-table-body" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                            <tbody id="discount-table-body" class="divide-y divide-gray-100 dark:divide-gray-700">
+                                <tr><td colspan="10" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Klik tombol Calculate untuk melihat hasil simulasi</td></tr>
+                            </tbody>
                         </table>
                     </div>
                 </div>
