@@ -22,7 +22,7 @@ let appSettings = {
 let currentActiveTab = 'tab-direktori';
 
 // ===== TEMA =====
-let currentTheme = 'auto'; // default auto
+let currentTheme = 'auto';
 function applyTheme(theme) {
     const html = document.documentElement;
     if (theme === 'auto') {
@@ -332,9 +332,7 @@ function updateUIByRole() {
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
     
-    // URUTAN TAB: Dashboard, Directory Menu, HPP, Bahan Baku, Kategori, Data Penjualan, Settings
     const allTabs = ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings'];
-    // Sekarang Settings tersedia untuk semua role, tapi isinya dibatasi
     const tabMap = {
         staff: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-settings'],
         admin: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-settings'],
@@ -343,22 +341,21 @@ function updateUIByRole() {
     };
     const allowed = tabMap[role] || tabMap.staff;
     
-    // HOME = tab-direktori (Directory Menu)
-    const homeTab = 'tab-direktori';
-    const activeTab = allowed.includes(homeTab) ? homeTab : allowed[0];
+    // Gunakan tab terakhir yang disimpan, atau default ke yang pertama (Dashboard)
+    const savedTab = sessionStorage.getItem('activeTab');
+    let activeTab = savedTab && allowed.includes(savedTab) ? savedTab : allowed[0];
+    // Jika tidak ada savedTab atau tidak valid, gunakan yang pertama
+    if (!activeTab) activeTab = allowed[0];
     currentActiveTab = activeTab;
     
-    // Sembunyikan semua tab
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('active'); }
     });
-    // Tampilkan tab yang diizinkan
     allowed.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.remove('hidden'); }
     });
-    // Aktifkan tab yang benar
     const firstEl = document.getElementById(activeTab);
     if (firstEl) { firstEl.classList.add('active'); }
 
@@ -405,12 +402,10 @@ function updateUIByRole() {
         mobileMenuList.appendChild(btn);
     });
 
-    // Role-based visibility untuk elemen lainnya
     document.querySelectorAll('.role-admin').forEach(el => el.classList.toggle('hidden', !hasRole('admin')));
     document.querySelectorAll('.role-senior').forEach(el => el.classList.toggle('hidden', !hasRole('senior_bar')));
     document.querySelectorAll('.role-head').forEach(el => el.classList.toggle('hidden', !hasRole('head_bar')));
 
-    // Settings readonly message - hanya untuk head_bar yang bisa ubah
     const msg = document.getElementById('settings-readonly-msg');
     if (msg) {
         if (isLoggedIn && !hasRole('head_bar')) {
@@ -429,7 +424,6 @@ function updateUIByRole() {
         userStatus.className = 'text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-full shadow-inner border border-gray-200 dark:border-gray-600';
     }
 
-    // Isi nilai settings
     document.getElementById('setting-hpp-limit').value = appSettings.hpp_limit;
     setOverheadType(appSettings.overhead_type);
     if (appSettings.overhead_type === 'nominal') {
@@ -444,13 +438,8 @@ function updateUIByRole() {
     loadMenuDropdownPenjualan();
     populateKategoriFilterPenjualan();
 
-    // Restore tab dari sessionStorage
-    const savedTab = sessionStorage.getItem('activeTab');
-    if (savedTab && allowed.includes(savedTab)) {
-        switchTab(savedTab);
-    } else {
-        switchTab(activeTab);
-    }
+    // Panggil switchTab untuk sinkronisasi state dan sessionStorage
+    switchTab(activeTab);
 
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
         bbCurrentPage = 1;
@@ -1026,10 +1015,15 @@ function updateKalkulasiHPP(mode) {
     if (mode !== 'edit') document.getElementById(prefix + 'target-jual').innerText = formatRp(hargaJual);
     const elMargin = document.getElementById(prefix + 'margin');
     elMargin.innerText = formatRp(marginValue);
-    elMargin.className = marginValue < 0 ? 'font-bold text-red-400' : 'font-bold text-emerald-400';
+    if (marginValue < 0) elMargin.className = 'font-bold text-red-500';
+    else if (marginValue > 0) elMargin.className = 'font-bold text-emerald-500';
+    else elMargin.className = 'font-bold text-gray-900 dark:text-gray-100';
+
     const elHPP = document.getElementById(prefix + 'persentase');
     elHPP.innerText = hppValue.toFixed(2) + '%';
-    elHPP.className = hppValue > appSettings.hpp_limit ? 'font-black text-lg text-red-500' : 'font-black text-lg text-emerald-400';
+    if (hppValue > appSettings.hpp_limit) elHPP.className = 'font-black text-lg text-red-500';
+    else if (hppValue < appSettings.hpp_limit) elHPP.className = 'font-black text-lg text-emerald-500';
+    else elHPP.className = 'font-black text-lg text-gray-900 dark:text-gray-100';
 }
 async function simpanResepFinal() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
@@ -1163,8 +1157,16 @@ function renderCatalogDirektori() {
             const cardBgColor = getCardGradient(sub);
             html += `<div class="mb-10"><h3 class="text-lg font-bold text-gray-700 dark:text-gray-300 mb-5 flex items-center"><span class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-4 py-1.5 rounded-full text-sm uppercase tracking-wider border border-blue-200 dark:border-blue-800 shadow-sm">${sub}</span></h3><div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">`;
             groupedData[kat][sub].forEach(menu => {
-                let hppColor = menu.hppPersen > appSettings.hpp_limit ? 'text-red-500' : 'text-emerald-600';
-                let marginColor = menu.margin < 0 ? 'text-red-500' : 'text-emerald-600';
+                let hppColor = '';
+                if (menu.hppPersen > appSettings.hpp_limit) hppColor = 'text-red-600';
+                else if (menu.hppPersen < appSettings.hpp_limit) hppColor = 'text-emerald-600';
+                else hppColor = 'text-gray-900 dark:text-gray-100';
+
+                let marginColor = '';
+                if (menu.margin < 0) marginColor = 'text-red-600';
+                else if (menu.margin > 0) marginColor = 'text-emerald-600';
+                else marginColor = 'text-gray-900 dark:text-gray-100';
+
                 let ovhText = '';
                 if (menu.overheadValue > 0) {
                     if (menu.overheadType === 'persen') {
@@ -1183,9 +1185,9 @@ function renderCatalogDirektori() {
                                 <button onclick="aksiHapusResep(${menu.id}, '${menu.nama}')" class="w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 border-t border-gray-100 dark:border-gray-700">🗑️ Hapus</button>
                             </div>
                         </div>` : ''}
-                        <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl relative">
-                            <h3 class="text-xl font-black tracking-wide pr-8 leading-tight break-words">${menu.nama}</h3>
-                            <div class="absolute bottom-5 right-5 text-xs font-semibold bg-white/20 px-2 py-1 rounded backdrop-blur">YIELD: ${menu.yield}</div>
+                        <div class="bg-gradient-to-br ${cardBgColor} text-white p-5 rounded-t-2xl">
+                            <h3 class="text-xl font-black tracking-wide leading-tight break-words">${menu.nama}</h3>
+                            <div class="text-xs font-semibold bg-white/20 px-3 py-1 rounded backdrop-blur inline-block mt-2">YIELD: ${menu.yield}</div>
                         </div>
                         <div class="p-5 md:p-6 flex-grow flex flex-col">
                             <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 dark:text-gray-500 italic">Tanpa komposisi</li>'}</ul>
@@ -1247,7 +1249,16 @@ function renderTableSummary() {
         else btnMassal.classList.add('hidden');
     }
     sData.forEach(m => {
-        let textHppColor = m.hppPersen > appSettings.hpp_limit ? 'text-red-600 dark:text-red-400 font-black' : 'text-emerald-600 dark:text-emerald-400 font-bold';
+        let textHppColor = '';
+        if (m.hppPersen > appSettings.hpp_limit) textHppColor = 'text-red-600 dark:text-red-400 font-black';
+        else if (m.hppPersen < appSettings.hpp_limit) textHppColor = 'text-emerald-600 dark:text-emerald-400 font-bold';
+        else textHppColor = 'text-gray-900 dark:text-gray-100 font-bold';
+
+        let marginColorSummary = '';
+        if (m.margin < 0) marginColorSummary = 'text-red-500 dark:text-red-400';
+        else if (m.margin > 0) marginColorSummary = 'text-emerald-600 dark:text-emerald-400';
+        else marginColorSummary = 'text-gray-900 dark:text-gray-100';
+
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors';
         let html = '';
@@ -1261,7 +1272,7 @@ function renderTableSummary() {
             <td class="p-4 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(m.harga_jual)}</td>
             <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(m.totalCost)}</td>
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
-            <td class="p-4 text-right font-bold ${m.margin < 0 ? 'text-red-500 dark:text-red-400':'text-emerald-600 dark:text-emerald-400'}">${formatRp(m.margin)}</td>
+            <td class="p-4 text-right font-bold ${marginColorSummary}">${formatRp(m.margin)}</td>
         `;
         html += `<td class="p-4 text-center"><div class="relative inline-block">`;
         if (canEditResep) {
@@ -1307,6 +1318,17 @@ function infoResepCard(id) {
             ? `<p><strong>Overhead:</strong> ${menu.overheadValue}% dari HPP bahan</p>` 
             : `<p><strong>Overhead:</strong> ${formatRp(menu.overhead)}</p>`;
     }
+
+    let marginColorInfo = '';
+    if (menu.margin < 0) marginColorInfo = 'text-red-600';
+    else if (menu.margin > 0) marginColorInfo = 'text-emerald-600';
+    else marginColorInfo = 'text-gray-900 dark:text-gray-100';
+
+    let hppColorInfo = '';
+    if (menu.hppPersen > appSettings.hpp_limit) hppColorInfo = 'text-red-600';
+    else if (menu.hppPersen < appSettings.hpp_limit) hppColorInfo = 'text-emerald-600';
+    else hppColorInfo = 'text-gray-900 dark:text-gray-100';
+
     let detailHtml = `
         <p><strong>Kategori:</strong> ${menu.kategori}</p>
         <p><strong>Sub Kategori:</strong> ${menu.sub_kategori}</p>
@@ -1314,8 +1336,8 @@ function infoResepCard(id) {
         <p><strong>Yield (Porsi):</strong> ${menu.yield}</p>
         <p><strong>HPP / Porsi:</strong> ${formatRp(menu.totalCost)}</p>
         ${ovhText}
-        <p><strong>Margin:</strong> ${formatRp(menu.margin)}</p>
-        <p><strong>% HPP:</strong> ${menu.hppPersen.toFixed(1)}%</p>
+        <p><strong>Margin:</strong> <span class="font-bold ${marginColorInfo}">${formatRp(menu.margin)}</span></p>
+        <p><strong>% HPP:</strong> <span class="font-bold ${hppColorInfo}">${menu.hppPersen.toFixed(1)}%</span></p>
         <hr class="my-3" />
         <p class="font-bold">Komposisi Bahan:</p>
         <ul class="list-disc pl-5 space-y-1">${menu.komposisiHTML || '<li class="text-gray-400 italic">Tidak ada</li>'}</ul>
@@ -1368,10 +1390,14 @@ function renderDashboardAnalitika() {
     topMarginBody.innerHTML = '';
     if (marginSorted.length === 0) topMarginBody.innerHTML = `<tr><td class="text-center p-4 italic text-gray-400 dark:text-gray-500">Data menu belum siap.</td></tr>`;
     marginSorted.forEach(m => {
+        let marginColor = '';
+        if (m.margin < 0) marginColor = 'text-red-600';
+        else if (m.margin > 0) marginColor = 'text-emerald-600';
+        else marginColor = 'text-gray-900 dark:text-gray-100';
         topMarginBody.innerHTML += `
             <tr class="py-2 flex justify-between items-center text-sm">
                 <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
-                <td class="font-black text-emerald-600 dark:text-emerald-400 text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">profit</span></td>
+                <td class="font-black ${marginColor} text-right">${formatRp(m.margin)} <span class="text-xs font-normal text-gray-400 dark:text-gray-500">profit</span></td>
             </tr>
         `;
     });
@@ -1382,10 +1408,14 @@ function renderDashboardAnalitika() {
         criticalBody.innerHTML = `<tr><td class="p-4 text-center text-xs text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-800">✨ Selamat! Seluruh resep terkendali aman di bawah threshold ${appSettings.hpp_limit}%.</td></tr>`;
     } else {
         criticalSorted.forEach(m => {
+            let hppColor = '';
+            if (m.hppPersen > appSettings.hpp_limit) hppColor = 'text-red-600';
+            else if (m.hppPersen < appSettings.hpp_limit) hppColor = 'text-emerald-600';
+            else hppColor = 'text-gray-900 dark:text-gray-100';
             criticalBody.innerHTML += `
                 <tr class="py-2 flex justify-between items-center text-sm">
                     <td class="font-bold text-gray-700 dark:text-gray-300">${m.nama}</td>
-                    <td class="font-black text-red-600 dark:text-red-400 text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400 dark:text-gray-500">HPP</span></td>
+                    <td class="font-black ${hppColor} text-right">${m.hppPersen.toFixed(1)}% <span class="text-xs font-normal text-gray-400 dark:text-gray-500">HPP</span></td>
                 </tr>
             `;
         });
@@ -2137,7 +2167,7 @@ document.addEventListener('click', function(e) {
 
 // ---------- ON LOAD ----------
 window.onload = async () => {
-    loadTheme(); // default auto
+    loadTheme();
     await inisialisasiAuth();
     await loadKategoriDB();
     const bulanNow = new Date().getMonth() + 1;
