@@ -238,6 +238,7 @@ async function fetchUserRoleAndSettings(user) {
         role = roleData.role;
     }
     currentUser = { id: user.id, email: user.email, role };
+    console.log('✅ User role set:', currentUser);
     await loadAppSettings();
     updateUIByRole();
     hideLoginScreen();
@@ -331,6 +332,7 @@ async function logoutAdmin() {
 function updateUIByRole() {
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
+    console.log('🔄 updateUIByRole - role:', role);
     
     const allTabs = ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-settings'];
     const tabMap = {
@@ -435,7 +437,9 @@ function updateUIByRole() {
     loadMenuDropdownPenjualan();
     populateKategoriFilterPenjualan();
 
-    // Restore tab dari sessionStorage
+    // Pastikan loadKategoriDB dipanggil setelah role di-set
+    loadKategoriDB();
+
     const savedTab = sessionStorage.getItem('activeTab');
     if (savedTab && allowed.includes(savedTab)) {
         switchTab(savedTab);
@@ -690,10 +694,13 @@ async function loadKategoriDB() {
     if (!error && data) {
         listKategori = data.filter(d => d.jenis === 'Kategori');
         listSubKategori = data.filter(d => d.jenis === 'Sub-Kategori');
+        console.log('📂 Kategori dimuat:', listKategori.length, 'Sub:', listSubKategori.length);
         renderDropdownKategori();
         renderTabelManajemenKategori();
         populateFilterKategoriDirektori();
         populateKategoriFilterPenjualan();
+    } else {
+        console.error('❌ Gagal load kategori:', error);
     }
 }
 function renderDropdownKategori() {
@@ -724,18 +731,24 @@ function renderTabelManajemenKategori() {
     const ulKat = document.getElementById('list-manajemen-kategori');
     const ulSub = document.getElementById('list-manajemen-sub-kategori');
     if (!ulKat || !ulSub) return;
+
+    // Perbaiki: gunakan hasRole('senior_bar') untuk menampilkan kebab menu
     const canEdit = hasRole('senior_bar');
+    console.log('🔧 renderTabelManajemenKategori - canEdit:', canEdit, 'role:', currentUser?.role);
+    
     const generateHTML = (list, jenis) => {
         if (list.length === 0) return `<li class="text-sm text-gray-400 dark:text-gray-500 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
         return list.map(k => `
             <li class="flex justify-between items-center bg-gray-50 dark:bg-gray-700 border border-gray-100 dark:border-gray-600 p-3 rounded-lg relative hover:bg-white dark:hover:bg-gray-600 transition-colors">
                 <span class="font-semibold text-gray-700 dark:text-gray-300 truncate pr-4">${k.nama}</span>
-                ${canEdit ? `<div class="relative"><button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="kebab-btn bg-white dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
-                <div id="drop-kat-${k.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-44 py-2 text-sm text-gray-700 dark:text-gray-300 z-50 overflow-hidden" style="top:100%;">
-                    <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit Nama</button>
-                    <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 font-bold text-green-600 dark:text-green-400 border-b border-gray-100 dark:border-gray-700">➕ Tambahkan Menu</button>
-                    <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 mt-1">🗑️ Hapus Master</button>
-                </div></div>` : ''}
+                ${canEdit ? `<div class="relative">
+                    <button onclick="toggleKebabMenu(event, 'drop-kat-${k.id}')" class="kebab-btn bg-white dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300 w-8 h-8 rounded-lg font-bold shadow-sm border border-gray-200 dark:border-gray-600 transition-colors">⋮</button>
+                    <div id="drop-kat-${k.id}" class="dropdown-menu hidden absolute right-0 mt-1 bg-white dark:bg-gray-800 shadow-xl rounded-xl border border-gray-100 dark:border-gray-700 w-44 py-2 text-sm text-gray-700 dark:text-gray-300 z-50 overflow-hidden" style="top:100%;">
+                        <button onclick="bukaModalFormKategori('${jenis}', 'edit', ${k.id}, '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/30 font-bold text-blue-600 dark:text-blue-400">📝 Edit Nama</button>
+                        <button onclick="bukaModalAssignMenu('${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-green-50 dark:hover:bg-green-900/30 font-bold text-green-600 dark:text-green-400 border-b border-gray-100 dark:border-gray-700">➕ Tambahkan Menu</button>
+                        <button onclick="hapusKategoriManajemen(${k.id}, '${jenis}', '${k.nama.replace(/'/g, "\\'")}')" class="w-full block text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-900/30 font-bold text-red-600 dark:text-red-400 mt-1">🗑️ Hapus Master</button>
+                    </div>
+                </div>` : ''}
             </li>
         `).join('');
     };
