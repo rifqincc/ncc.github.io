@@ -1224,3 +1224,43 @@ nav .border-b {
 .dark .bg-gradient-to-r.from-amber-50 .border-amber-300 {
     border-color: #94a3b8 !important;
 }
+
+/* ================================================================
+   TOMBOL "Template", "Import Excel", "Export" TETAP PUTIH DI TEMA GELAP
+   ================================================================ */
+.dark button.bg-white.text-blue-700,
+.dark button.bg-white.text-green-700,
+.dark button.bg-white.text-purple-700,
+.dark button.bg-white.text-amber-700,
+.dark button.bg-white.text-gray-700 {
+    color: #ffffff !important;
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+.dark button.bg-white.text-blue-700:hover,
+.dark button.bg-white.text-green-700:hover,
+.dark button.bg-white.text-purple-700:hover,
+.dark button.bg-white.text-amber-700:hover,
+.dark button.bg-white.text-gray-700:hover {
+    background-color: #2d3748 !important;
+}
+/* Tombol "Template" spesifik */
+.dark .bg-white.border-blue-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-green-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-purple-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-amber-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-gray-300 {
+    border-color: #475569 !important;
+}
+/* Tombol "Export" */
+.dark .bg-white.text-gray-700 {
+    color: #ffffff !important;
+}
