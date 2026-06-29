@@ -455,6 +455,84 @@
                 </div>
             </div>
 
+            <!-- ===================== TAB DISCOUNT CALCULATOR ===================== -->
+            <div id="tab-discount-calculator" class="tab-content hidden">
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-700 p-6 rounded-2xl shadow-md mb-6 text-white relative overflow-hidden">
+                    <div class="absolute right-0 top-0 opacity-10 text-9xl transform translate-x-4 -translate-y-4">🧮</div>
+                    <div class="relative z-10">
+                        <h2 class="text-2xl font-black mb-1">Kalkulator Diskon Menu</h2>
+                        <p class="text-sm opacity-90">Simulasikan dampak diskon terhadap profitabilitas produk berdasarkan kategori dan sub-kategori tertentu.</p>
+                    </div>
+                </div>
+
+                <!-- Filter & Calculate -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
+                    <div class="flex flex-wrap items-end gap-4">
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Kategori</label>
+                            <select id="discount-category" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white">
+                                <option value="all">Semua Kategori</option>
+                            </select>
+                        </div>
+                        <div class="flex-1 min-w-[150px]">
+                            <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Sub Kategori</label>
+                            <select id="discount-subcategory" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none bg-white dark:bg-gray-700 text-sm dark:text-white">
+                                <option value="all">Semua Sub-Kategori</option>
+                            </select>
+                        </div>
+                        <div class="w-36">
+                            <label class="block text-sm font-bold text-gray-600 dark:text-gray-400 mb-1">Diskon (%)</label>
+                            <input type="number" id="discount-percent" value="10" min="0" max="100" step="0.5" class="w-full p-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#FF3B30] outline-none dark:bg-gray-700 dark:text-white" />
+                        </div>
+                        <button onclick="calculateDiscount()" class="bg-[#FF3B30] text-white px-6 py-2.5 rounded-lg font-bold hover:bg-[#e0352a] shadow transition-transform hover:-translate-y-0.5">Calculate</button>
+                        <span class="text-xs text-gray-400 dark:text-gray-500 italic ml-auto">* Berdasarkan data HPP aktif</span>
+                    </div>
+                </div>
+
+                <!-- Stats -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="discount-stats">
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <span class="block text-xs font-bold text-gray-400 uppercase">Menu Terpengaruh</span>
+                        <span id="ds-count" class="text-2xl font-black text-gray-800 dark:text-white">0</span>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <span class="block text-xs font-bold text-gray-400 uppercase">Total Revenue Awal</span>
+                        <span id="ds-rev-original" class="text-2xl font-black text-emerald-600 dark:text-emerald-400">Rp 0</span>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <span class="block text-xs font-bold text-gray-400 uppercase">Total Revenue Setelah Diskon</span>
+                        <span id="ds-rev-discount" class="text-2xl font-black text-blue-600 dark:text-blue-400">Rp 0</span>
+                    </div>
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                        <span class="block text-xs font-bold text-gray-400 uppercase">Total Kehilangan Margin</span>
+                        <span id="ds-margin-loss" class="text-2xl font-black text-red-600 dark:text-red-400">Rp 0</span>
+                    </div>
+                </div>
+
+                <!-- Table -->
+                <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm whitespace-nowrap" id="discount-table">
+                            <thead class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-b border-gray-200 dark:border-gray-600">
+                                <tr>
+                                    <th class="p-3 font-bold">#</th>
+                                    <th class="p-3 font-bold">Nama Menu</th>
+                                    <th class="p-3 font-bold text-right">Harga Awal</th>
+                                    <th class="p-3 font-bold text-center">Diskon</th>
+                                    <th class="p-3 font-bold text-right">Harga Setelah</th>
+                                    <th class="p-3 font-bold text-right">HPP</th>
+                                    <th class="p-3 font-bold text-right">Margin Awal</th>
+                                    <th class="p-3 font-bold text-right">Margin Akhir</th>
+                                    <th class="p-3 font-bold text-center">% HPP Akhir</th>
+                                    <th class="p-3 font-bold text-center">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="discount-table-body" class="divide-y divide-gray-100 dark:divide-gray-700"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
             <!-- ===================== TAB SETTINGS ===================== -->
             <div id="tab-settings" class="tab-content hidden">
                 <div class="bg-gradient-to-r from-slate-700 via-slate-600 to-gray-700 p-6 rounded-2xl shadow-md mb-6 text-white relative overflow-hidden max-w-2xl mx-auto">
