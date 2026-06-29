@@ -341,11 +341,8 @@ function updateUIByRole() {
     };
     const allowed = tabMap[role] || tabMap.staff;
     
-    // Gunakan tab terakhir yang disimpan, atau default ke yang pertama (Dashboard)
-    const savedTab = sessionStorage.getItem('activeTab');
-    let activeTab = savedTab && allowed.includes(savedTab) ? savedTab : allowed[0];
-    // Jika tidak ada savedTab atau tidak valid, gunakan yang pertama
-    if (!activeTab) activeTab = allowed[0];
+    const homeTab = 'tab-direktori';
+    const activeTab = allowed.includes(homeTab) ? homeTab : allowed[0];
     currentActiveTab = activeTab;
     
     allTabs.forEach(id => {
@@ -438,8 +435,13 @@ function updateUIByRole() {
     loadMenuDropdownPenjualan();
     populateKategoriFilterPenjualan();
 
-    // Panggil switchTab untuk sinkronisasi state dan sessionStorage
-    switchTab(activeTab);
+    // Restore tab dari sessionStorage
+    const savedTab = sessionStorage.getItem('activeTab');
+    if (savedTab && allowed.includes(savedTab)) {
+        switchTab(savedTab);
+    } else {
+        switchTab(activeTab);
+    }
 
     if (document.getElementById('tab-bahan-baku').classList.contains('active')) {
         bbCurrentPage = 1;
@@ -1013,6 +1015,7 @@ function updateKalkulasiHPP(mode) {
     const hppValue = hargaJual > 0 ? (hppPerPorsi / hargaJual) * 100 : 0;
     document.getElementById(prefix + 'total-cost').innerText = formatRp(hppPerPorsi);
     if (mode !== 'edit') document.getElementById(prefix + 'target-jual').innerText = formatRp(hargaJual);
+    
     const elMargin = document.getElementById(prefix + 'margin');
     elMargin.innerText = formatRp(marginValue);
     if (marginValue < 0) elMargin.className = 'font-bold text-red-500';
@@ -2123,6 +2126,14 @@ async function updateDashboardEngineering() {
             const qty = sales?.qty || 0;
             const isEngineering = (qty < avg * 0.5) && avg > 0;
             const totalRevenue = sales?.totalHarga || 0;
+            let marginColorEng = '';
+            if (menu.margin < 0) marginColorEng = 'text-red-600 dark:text-red-400';
+            else if (menu.margin > 0) marginColorEng = 'text-emerald-600 dark:text-emerald-400';
+            else marginColorEng = 'text-gray-900 dark:text-gray-100';
+            let hppColorEng = '';
+            if (menu.hppPersen > appSettings.hpp_limit) hppColorEng = 'text-red-500 dark:text-red-400';
+            else if (menu.hppPersen < appSettings.hpp_limit) hppColorEng = 'text-emerald-600 dark:text-emerald-400';
+            else hppColorEng = 'text-gray-900 dark:text-gray-100';
             html += `
                 <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border ${isEngineering ? 'border-red-300 dark:border-red-700 bg-red-50 dark:bg-red-900/20' : 'border-gray-100 dark:border-gray-700'}">
                     <div class="flex justify-between items-start">
@@ -2132,8 +2143,8 @@ async function updateDashboardEngineering() {
                     <div class="mt-2 space-y-1 text-sm">
                         <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Qty Terjual</span><span class="font-bold">${qty}</span></div>
                         <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Total Revenue</span><span class="font-bold">${formatRp(totalRevenue)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Margin / Porsi</span><span class="font-bold ${menu.margin < 0 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${formatRp(menu.margin)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">% HPP</span><span class="font-bold ${menu.hppPersen > appSettings.hpp_limit ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}">${menu.hppPersen.toFixed(1)}%</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">Margin / Porsi</span><span class="font-bold ${marginColorEng}">${formatRp(menu.margin)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-500 dark:text-gray-400">% HPP</span><span class="font-bold ${hppColorEng}">${menu.hppPersen.toFixed(1)}%</span></div>
                     </div>
                 </div>
             `;
