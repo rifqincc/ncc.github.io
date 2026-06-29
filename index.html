@@ -461,11 +461,11 @@
                     <div class="absolute right-0 top-0 opacity-10 text-9xl transform translate-x-4 -translate-y-4">⚙️</div>
                     <div class="relative z-10">
                         <h2 class="text-2xl font-black mb-1">Pengaturan Konfigurasi Global</h2>
-                        <p class="text-sm opacity-90">Atur batasan threshold HPP, biaya overhead, dan preferensi tema tampilan.</p>
+                        <p class="text-sm opacity-90">Atur preferensi tampilan dan konfigurasi sistem.</p>
                     </div>
                 </div>
                 <div class="max-w-2xl mx-auto space-y-6">
-                    <!-- Tema -->
+                    <!-- Tema - tersedia untuk semua user -->
                     <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div class="flex items-start gap-4 mb-5">
                             <div class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 p-3 rounded-xl text-2xl shrink-0 shadow-inner">🌓</div>
@@ -480,11 +480,12 @@
                                 <button onclick="setTheme('dark')" class="theme-btn px-4 py-2 rounded-lg text-sm font-bold border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">🌙 Gelap</button>
                                 <button onclick="setTheme('auto')" class="theme-btn px-4 py-2 rounded-lg text-sm font-bold border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 transition-all">⚙️ Otomatis</button>
                             </div>
-                            <p id="theme-status" class="text-xs text-gray-400 mt-2">Tema aktif: <span class="font-bold text-[#FF3B30]">Terang</span></p>
+                            <p id="theme-status" class="text-xs text-gray-400 mt-2">Tema aktif: <span class="font-bold text-[#FF3B30]">Otomatis</span></p>
                         </div>
                     </div>
-                    <!-- Batas HPP -->
-                    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+
+                    <!-- Batas HPP - hanya untuk head_bar -->
+                    <div class="role-head hidden bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div class="flex items-start gap-4 mb-5">
                             <div class="bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 p-3 rounded-xl text-2xl shrink-0 shadow-inner">🚨</div>
                             <div>
@@ -499,8 +500,9 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Overhead -->
-                    <div class="bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+
+                    <!-- Overhead - hanya untuk head_bar -->
+                    <div class="role-head hidden bg-white dark:bg-gray-800 p-6 md:p-8 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                         <div class="flex items-start gap-4 mb-5">
                             <div class="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 p-3 rounded-xl text-2xl shrink-0 shadow-inner">💰</div>
                             <div class="flex-1 min-w-0">
@@ -530,11 +532,12 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Simpan -->
-                    <div class="bg-white dark:bg-gray-800 p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4 flex-wrap">
+
+                    <!-- Simpan - hanya untuk head_bar -->
+                    <div class="role-head hidden bg-white dark:bg-gray-800 p-5 md:p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 flex items-center justify-between gap-4 flex-wrap">
                         <p id="settings-readonly-msg" class="text-sm text-gray-400 italic hidden">🔒 Hanya Head/Executive yang dapat mengubah pengaturan.</p>
-                        <span class="text-xs text-gray-400 dark:text-gray-500 hidden md:inline role-head">Pengaturan tersimpan permanen di database & berlaku untuk semua pengguna.</span>
-                        <button id="btn-simpan-settings" onclick="simpanSettings()" class="role-head hidden bg-[#FF3B30] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#e0352a] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 shadow-md">
+                        <span class="text-xs text-gray-400 dark:text-gray-500 hidden md:inline">Pengaturan tersimpan permanen di database & berlaku untuk semua pengguna.</span>
+                        <button id="btn-simpan-settings" onclick="simpanSettings()" class="bg-[#FF3B30] text-white px-8 py-3 rounded-xl font-bold hover:bg-[#e0352a] hover:shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2 shadow-md">
                             <span id="btn-simpan-settings-text">💾 Simpan Pengaturan</span>
                         </button>
                     </div>
