@@ -1,4 +1,4 @@
-/* style.css - FULL VERSION with all fixes */
+/* style.css - FINAL VERSION with all fixes */
 .tab-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -994,88 +994,42 @@ body {
 }
 
 /* ================================================================
-   WHITE TEXT FOR SPECIFIED ELEMENTS (both themes)
+   HEADER TEXT IN LIGHT THEME - MAKE SUBTEXT (p) WHITE
    ================================================================ */
+.light .bg-gradient-to-r h2,
+.light .bg-gradient-to-r .text-white {
+    color: #ffffff !important;
+}
+.light .bg-gradient-to-r p,
+.light .bg-gradient-to-r .text-sm.opacity-90 {
+    color: #ffffff !important;
+}
 
-/* 1. Navbar brand "F&B PRO" - make it white with dark background in light theme */
+/* ================================================================
+   NAVBAR BRAND "F&B PRO" - NO BACKGROUND, FOLLOW NAVBAR
+   ================================================================ */
+/* Remove custom background from light theme brand */
 .light #brand-link {
-    background-color: #1e3a5f;
-    padding: 6px 14px;
-    border-radius: 10px;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.75rem;
+    background-color: transparent !important;
+    padding: 0 !important;
+    border-radius: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
 }
 .light #brand-link h1 {
-    color: #ffffff !important;
     background: none !important;
-    -webkit-text-fill-color: #ffffff !important;
+    -webkit-text-fill-color: initial !important;
     background-clip: unset !important;
+    color: #1e3a5f !important;
 }
-/* In dark theme, keep as is (already white-ish) */
+/* In dark theme, keep as is */
 .dark #brand-link h1 {
     color: #f8fafc !important;
 }
 
-/* 2. Header tab titles (Directory Menu Card, Dashboard, etc.) - already white via bg-gradient, but ensure */
-.light .bg-gradient-to-r h2,
-.light .bg-gradient-to-r p,
-.light .bg-gradient-to-r .text-white {
-    color: #ffffff !important;
-}
-.dark .bg-gradient-to-r h2,
-.dark .bg-gradient-to-r p,
-.dark .bg-gradient-to-r .text-white {
-    color: #ffffff !important;
-}
-
-/* 3. Recipe card - menu name (e.g. "Americano O.G") - already white in gradient, but ensure */
-#recipe-wrapper .bg-gradient-to-br h3 {
-    color: #ffffff !important;
-}
-/* Also the yield badge */
-#recipe-wrapper .bg-white\/20 {
-    color: #ffffff !important;
-}
-
-/* 4. Category and sub-category labels - keep original colors (do not change) */
-/* Already handled by existing rules, no override needed */
-
 /* ================================================================
-   FIX FOR LIGHT THEME NAVBAR OTHER ELEMENTS (so they remain readable)
-   ================================================================ */
-.light #brand-link + div {
-    /* the right side of navbar (tabs, user status, logout) */
-    color: #0f172a !important;
-}
-.light .btn-tab {
-    color: #334155 !important;
-}
-.light .btn-tab.active {
-    color: #FF3B30 !important;
-}
-.light #user-status {
-    color: #FF3B30 !important;
-    background-color: rgba(255, 59, 48, 0.1) !important;
-}
-
-/* ================================================================
-   ADDITIONAL FIX: Dark description text in light theme for header subtext
-   ================================================================ */
-.light .bg-gradient-to-r .text-sm.opacity-90 {
-    color: #0f172a !important;
-}
-/* Also any paragraph inside header */
-.light .bg-gradient-to-r p {
-    color: #0f172a !important;
-}
-/* But keep h2 white */
-.light .bg-gradient-to-r h2 {
-    color: #ffffff !important;
-}
-
-/* ================================================================
-   FIX: Text inside import/export sections (light theme)
+   FIX FOR IMPORT/EXPORT SECTIONS (LIGHT THEME)
    ================================================================ */
 .light .bg-gradient-to-r.from-blue-50 p,
 .light .bg-gradient-to-r.from-purple-50 p,
