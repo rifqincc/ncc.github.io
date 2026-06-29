@@ -334,7 +334,6 @@ async function logoutAdmin() {
 function updateUIByRole() {
     const isLoggedIn = !!currentUser;
     const role = currentUser?.role || 'guest';
-    
     const allTabs = ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-discount-calculator', 'tab-settings'];
     const tabMap = {
         staff: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-settings'],
@@ -343,11 +342,9 @@ function updateUIByRole() {
         head_bar: ['tab-dashboard', 'tab-direktori', 'tab-hpp', 'tab-bahan-baku', 'tab-kategori', 'tab-data-penjualan', 'tab-discount-calculator', 'tab-settings']
     };
     const allowed = tabMap[role] || tabMap.staff;
-    
     const homeTab = 'tab-direktori';
     const activeTab = allowed.includes(homeTab) ? homeTab : allowed[0];
     currentActiveTab = activeTab;
-    
     allTabs.forEach(id => {
         const el = document.getElementById(id);
         if (el) { el.classList.add('hidden'); el.classList.remove('active'); }
@@ -479,13 +476,6 @@ function switchTab(tabId) {
     }
     if (tabId === 'tab-discount-calculator') {
         populateDiscountDropdowns();
-        // Reset hasil discount saat buka tab
-        document.getElementById('discount-table-body').innerHTML = `<tr><td colspan="10" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Klik tombol Calculate untuk melihat hasil simulasi</td></tr>`;
-        document.getElementById('ds-count').innerText = '0';
-        document.getElementById('ds-rev-original').innerText = formatRp(0);
-        document.getElementById('ds-rev-discount').innerText = formatRp(0);
-        document.getElementById('ds-margin-loss').innerText = formatRp(0);
-        discountResults = [];
     }
 }
 
@@ -684,14 +674,11 @@ async function loadKategoriDB() {
     if (!error && data) {
         listKategori = data.filter(d => d.jenis === 'Kategori');
         listSubKategori = data.filter(d => d.jenis === 'Sub-Kategori');
-        console.log('📂 Kategori dimuat:', listKategori.length, 'Sub:', listSubKategori.length);
         renderDropdownKategori();
         renderTabelManajemenKategori();
         populateFilterKategoriDirektori();
         populateKategoriFilterPenjualan();
         populateDiscountDropdowns();
-    } else {
-        console.error('❌ Gagal load kategori:', error);
     }
 }
 function renderDropdownKategori() {
@@ -724,8 +711,6 @@ function renderTabelManajemenKategori() {
     if (!ulKat || !ulSub) return;
 
     const canEdit = hasRole('senior_bar');
-    console.log('🔧 renderTabelManajemenKategori - canEdit:', canEdit, 'role:', currentUser?.role);
-    
     const generateHTML = (list, jenis) => {
         if (list.length === 0) return `<li class="text-sm text-gray-400 dark:text-gray-500 italic p-3 text-center border border-dashed rounded-lg">Belum ada data</li>`;
         return list.map(k => `
@@ -1018,7 +1003,6 @@ function updateKalkulasiHPP(mode) {
     const hppValue = hargaJual > 0 ? (hppPerPorsi / hargaJual) * 100 : 0;
     document.getElementById(prefix + 'total-cost').innerText = formatRp(hppPerPorsi);
     if (mode !== 'edit') document.getElementById(prefix + 'target-jual').innerText = formatRp(hargaJual);
-    
     const elMargin = document.getElementById(prefix + 'margin');
     elMargin.innerText = formatRp(marginValue);
     if (marginValue < 0) elMargin.className = 'font-bold text-red-500';
@@ -1136,14 +1120,11 @@ async function loadDirektori() {
     if (document.getElementById('tab-data-penjualan').classList.contains('active')) {
         renderTablePenjualanInput();
     }
-    // Reset discount results on data refresh
-    discountResults = [];
     if (document.getElementById('tab-discount-calculator').classList.contains('active')) {
-        document.getElementById('discount-table-body').innerHTML = `<tr><td colspan="10" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Klik tombol Calculate untuk melihat hasil simulasi</td></tr>`;
-        document.getElementById('ds-count').innerText = '0';
-        document.getElementById('ds-rev-original').innerText = formatRp(0);
-        document.getElementById('ds-rev-discount').innerText = formatRp(0);
-        document.getElementById('ds-margin-loss').innerText = formatRp(0);
+        // Reset tabel jika belum di-calculate
+        if (discountResults.length === 0) {
+            document.getElementById('discount-table-body').innerHTML = `<tr><td colspan="10" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Klik tombol Calculate untuk melihat hasil simulasi</td></tr>`;
+        }
     }
 }
 
@@ -1333,17 +1314,14 @@ function infoResepCard(id) {
             ? `<p><strong>Overhead:</strong> ${menu.overheadValue}% dari HPP bahan</p>` 
             : `<p><strong>Overhead:</strong> ${formatRp(menu.overhead)}</p>`;
     }
-
     let marginColorInfo = '';
     if (menu.margin < 0) marginColorInfo = 'text-red-600';
     else if (menu.margin > 0) marginColorInfo = 'text-emerald-600';
     else marginColorInfo = 'text-gray-900 dark:text-gray-100';
-
     let hppColorInfo = '';
     if (menu.hppPersen > appSettings.hpp_limit) hppColorInfo = 'text-red-600';
     else if (menu.hppPersen < appSettings.hpp_limit) hppColorInfo = 'text-emerald-600';
     else hppColorInfo = 'text-gray-900 dark:text-gray-100';
-
     let detailHtml = `
         <p><strong>Kategori:</strong> ${menu.kategori}</p>
         <p><strong>Sub Kategori:</strong> ${menu.sub_kategori}</p>
@@ -1740,9 +1718,15 @@ function renderTablePenjualanInput() {
     const tbody = document.getElementById('table-penjualan-input-body');
     if (!tbody) return;
     const filterKat = document.getElementById('jual-filter-kategori').value;
-    let menus = cachedResepSummaryData;
-    if (filterKat !== 'all') {
-        menus = menus.filter(m => m.kategori === filterKat);
+    // Jika kategori "all" atau belum dipilih, tampilkan pesan
+    if (filterKat === 'all' || filterKat === '') {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Pilih kategori terlebih dahulu untuk menampilkan menu.</td></tr>`;
+        return;
+    }
+    let menus = cachedResepSummaryData.filter(m => m.kategori === filterKat);
+    if (menus.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada menu untuk kategori ini.</td></tr>`;
+        return;
     }
     const grouped = {};
     menus.forEach(menu => {
@@ -1756,10 +1740,6 @@ function renderTablePenjualanInput() {
         }
     });
     tbody.innerHTML = '';
-    if (menus.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Tidak ada menu untuk kategori ini.</td></tr>`;
-        return;
-    }
     Object.keys(grouped).sort().forEach(sub => {
         tbody.innerHTML += `<tr class="bg-gray-50 dark:bg-gray-700/50"><td colspan="5" class="p-2 font-bold text-gray-700 dark:text-gray-300 border-b-2 border-gray-200 dark:border-gray-600">📂 ${sub}</td></tr>`;
         grouped[sub].forEach(menu => {
@@ -2196,7 +2176,6 @@ function updateDiscountSubcategory() {
         });
         subSelect.disabled = false;
     } else {
-        // Filter sub-kategori berdasarkan kategori yang dipilih
         const filteredSubs = listSubKategori.filter(sub => {
             return cachedResepSummaryData.some(menu => 
                 menu.kategori === selectedCat && menu.sub_kategori === sub.nama
@@ -2328,7 +2307,6 @@ function renderDiscountTable() {
     });
     tbody.innerHTML = html;
 
-    // Update sort icons
     document.querySelectorAll('#discount-table .sortable-disc').forEach(th => {
         const key = th.dataset.sort;
         const icon = th.querySelector('.sort-icon');
