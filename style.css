@@ -1,4 +1,4 @@
-/* style.css - FULL VERSION */
+/* style.css - FULL VERSION with contrast fixes for dark theme */
 .tab-content { 
     display: none; 
     animation: fadeIn 0.3s ease-in-out;
@@ -1026,38 +1026,26 @@ body {
 }
 
 /* ================================================================
-   BRAND TEXT - HITAM DI TERANG, PUTIH DI GELAP
+   BRAND (F&B PRO) AND RECIPE CARD NAMES - ALWAYS WHITE
    ================================================================ */
 #brand-link h1 {
-    background: none !important;
-    -webkit-text-fill-color: unset !important;
-    background-clip: unset !important;
+    color: #ffffff !important;
+}
+#recipe-wrapper .bg-gradient-to-br h3 {
+    color: #ffffff !important;
 }
 .light #brand-link h1 {
     color: #0f172a !important;
+    background: none !important;
+    -webkit-text-fill-color: #0f172a !important;
 }
-.dark #brand-link h1 {
-    color: #ffffff !important;
-}
-
-/* Recipe card names - always white */
-#recipe-wrapper .bg-gradient-to-br h3 {
+.light #recipe-wrapper .bg-gradient-to-br h3 {
     color: #ffffff !important;
 }
 
 /* ================================================================
-   NAVBAR BACKGROUND - TERANG DI LIGHT, GELAP DI DARK
+   NAVBAR DARK THEME - GELAP
    ================================================================ */
-.light nav {
-    background-color: #ffffff !important;
-    border-bottom-color: #e2e8f0 !important;
-}
-.light nav .bg-white\/90 {
-    background-color: #ffffff !important;
-}
-.light nav .border-gray-200 {
-    border-color: #e2e8f0 !important;
-}
 .dark nav {
     background-color: #0f172a !important;
     border-bottom-color: #1e293b !important;
@@ -1068,9 +1056,12 @@ body {
 .dark nav .border-gray-200 {
     border-color: #1e293b !important;
 }
+.dark nav .bg-white\/80 {
+    background-color: #0f172a !important;
+}
 
 /* ================================================================
-   ACTIVE TAB - HITAM DI DARK THEME
+   ACTIVE TAB TEXT - HITAM DI TEMA GELAP
    ================================================================ */
 .dark .btn-tab.active {
     color: #000000 !important;
@@ -1078,6 +1069,8 @@ body {
 .dark .btn-tab.active::after {
     background-color: #000000 !important;
 }
+
+/* Mobile menu active tab */
 .dark .btn-tab-mobile.bg-blue-50 {
     background-color: #e2e8f0 !important;
     color: #000000 !important;
@@ -1094,7 +1087,58 @@ body {
 }
 
 /* ================================================================
-   SETTINGS ROLE VISIBILITY
+   PERBAIKAN KONTRAST UNTUK TEKS DI KATEGORI (TEMA GELAP)
+   ================================================================ */
+/* Sub-judul "Integrasi Kategori Master" dan deskripsi */
+.dark .bg-purple-50 .font-bold,
+.dark .bg-purple-50 .text-sm,
+.dark .bg-purple-50 .text-purple-700,
+.dark .bg-purple-50 .text-purple-800 {
+    color: #f1f5f9 !important;
+}
+.dark .bg-purple-50 .text-purple-700 {
+    color: #c4b5fd !important;
+}
+
+/* Tombol "+ Tambah Baru" di kategori */
+.dark .bg-blue-100.text-blue-700,
+.dark .bg-indigo-100.text-indigo-700 {
+    color: #93c5fd !important;
+    background-color: #1e3a5f !important;
+}
+.dark .bg-blue-100.text-blue-700:hover,
+.dark .bg-indigo-100.text-indigo-700:hover {
+    background-color: #1e4a7a !important;
+}
+
+/* Nama kategori dan sub-kategori di list */
+.dark #list-manajemen-kategori .font-semibold,
+.dark #list-manajemen-sub-kategori .font-semibold {
+    color: #e2e8f0 !important;
+}
+
+/* Label "Master Kategori" dan "Master Sub-Kategori" */
+.dark .text-\[#1e3a5f\],
+.dark .text-indigo-800 {
+    color: #93c5fd !important;
+}
+.dark .text-\[#1e3a5f\] {
+    color: #93c5fd !important;
+}
+
+/* ================================================================
+   PERBAIKAN KONTRAST UNTUK TOMBOL SETTINGS (TEMA GELAP)
+   ================================================================ */
+.dark #btn-simpan-settings {
+    background-color: #FF3B30 !important;
+    color: #ffffff !important;
+}
+.dark #btn-simpan-settings:hover {
+    background-color: #e0352a !important;
+}
+
+/* ================================================================
+   SETTINGS - ALL USERS CAN ACCESS THEME, ONLY HEAD CAN ACCESS OTHERS
    ================================================================ */
 .role-head.hidden {
     display: none !important;
