@@ -41,7 +41,6 @@ async function loadDirektori() {
         renderTablePenjualanInput();
     }
     if (document.getElementById('tab-discount-calculator').classList.contains('active')) {
-        // Reset tabel jika belum di-calculate
         if (discountResults.length === 0) {
             document.getElementById('discount-table-body').innerHTML = `<tr><td colspan="10" class="text-center p-8 text-gray-400 dark:text-gray-500 italic">Klik tombol Calculate untuk melihat hasil simulasi</td></tr>`;
         }
@@ -108,7 +107,7 @@ function renderCatalogDirektori() {
                         <div class="p-5 md:p-6 flex-grow flex flex-col">
                             <ul class="mb-5 h-72 md:h-80 overflow-y-auto custom-scrollbar flex-grow pr-2">${menu.komposisiHTML || '<li class="text-sm text-gray-400 dark:text-gray-500 italic">Tanpa komposisi</li>'}</ul>
                             <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl text-[15px] space-y-2 border border-gray-100 dark:border-gray-600 mt-auto">
-                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">Harga Jual:</span><span class="font-bold text-gray-800 dark:text-gray-200">${formatRp(menu.harga_jual)}</span></div>
+                                <div class="flex justify-between items-center"><span class="text-gray-500 dark:text-gray-400 font-medium">Harga Jual:</span><span class="font-bold text-blue-600 dark:text-blue-400">${formatRp(menu.harga_jual)}</span></div>
                                 <div class="flex justify-between items-start border-t border-gray-200 dark:border-gray-600 pt-2">
                                     <span class="text-gray-500 dark:text-gray-400 font-medium">HPP / Porsi:</span>
                                     <div class="text-right">
@@ -185,8 +184,8 @@ function renderTableSummary() {
             <td class="p-4 font-bold text-gray-800 dark:text-gray-200">${m.nama}</td>
             <td class="p-4 text-gray-600 dark:text-gray-400 text-xs font-semibold"><span class="bg-gray-100 dark:bg-gray-700 border dark:border-gray-600 px-2 py-1 rounded-md">${m.kategori}</span></td>
             <td class="p-4 text-gray-500 dark:text-gray-400 text-xs">${m.sub_kategori}</td>
-            <td class="p-4 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(m.harga_jual)}</td>
-            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(m.totalCost)}</td>
+            <td class="p-4 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(m.harga_jual)}</td>
+            <td class="p-4 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(m.totalCost)}</td>
             <td class="p-4 text-center ${textHppColor}">${m.hppPersen.toFixed(1)}%</td>
             <td class="p-4 text-right font-bold ${marginColorSummary}">${formatRp(m.margin)}</td>
         `;
@@ -224,6 +223,7 @@ function renderTableSummary() {
     const selectAll = document.getElementById('select-all-summary');
     if (selectAll) selectAll.checked = false;
 }
+
 function infoResepCard(id) {
     const menu = cachedResepSummaryData.find(m => m.id === id);
     if (!menu) return alert('Data tidak ditemukan');
@@ -245,7 +245,7 @@ function infoResepCard(id) {
     let detailHtml = `
         <p><strong>Kategori:</strong> ${menu.kategori}</p>
         <p><strong>Sub Kategori:</strong> ${menu.sub_kategori}</p>
-        <p><strong>Harga Jual:</strong> ${formatRp(menu.harga_jual)}</p>
+        <p><strong>Harga Jual:</strong> <span class="text-blue-600 dark:text-blue-400 font-bold">${formatRp(menu.harga_jual)}</span></p>
         <p><strong>Yield (Porsi):</strong> ${menu.yield}</p>
         <p><strong>HPP / Porsi:</strong> ${formatRp(menu.totalCost)}</p>
         ${ovhText}
@@ -258,10 +258,12 @@ function infoResepCard(id) {
     document.getElementById('info-resep-detail').innerHTML = detailHtml;
     document.getElementById('modal-info-resep').classList.remove('hidden');
 }
+
 function toggleSelectAllSummary() {
     const checked = document.getElementById('select-all-summary').checked;
     document.querySelectorAll('.summary-checkbox').forEach(cb => cb.checked = checked);
 }
+
 async function hapusMassalResep() {
     if (!hasRole('senior_bar')) return alert('Akses ditolak.');
     const checkboxes = document.querySelectorAll('.summary-checkbox:checked');
@@ -282,4 +284,3 @@ async function hapusMassalResep() {
         loadDirektori();
     }
 }
-
