@@ -1,0 +1,366 @@
+/* ================================================================
+   DARK THEME - MAXIMUM BRIGHTNESS
+   ================================================================ */
+.dark .bg-white {
+    background-color: #1e293b !important;
+}
+.dark .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+.dark .bg-gray-100 {
+    background-color: #2d3748 !important;
+}
+.dark .bg-gray-200 {
+    background-color: #334155 !important;
+}
+.dark .bg-gray-300 {
+    background-color: #475569 !important;
+}
+.dark .border-gray-100 {
+    border-color: #334155 !important;
+}
+.dark .border-gray-200 {
+    border-color: #475569 !important;
+}
+.dark .border-gray-300 {
+    border-color: #475569 !important;
+}
+
+/* ALL TEXT - DARK THEME - BRIGHT AND READABLE */
+.dark,
+.dark *,
+.dark .text-gray-400,
+.dark .text-gray-500,
+.dark .text-gray-600,
+.dark .text-gray-700,
+.dark .text-gray-800,
+.dark p,
+.dark span,
+.dark div,
+.dark label,
+.dark h1, .dark h2, .dark h3, .dark h4, .dark h5, .dark h6,
+.dark .block,
+.dark .font-bold,
+.dark .font-semibold,
+.dark .font-medium,
+.dark .text-sm,
+.dark .text-xs,
+.dark .text-base,
+.dark .text-lg,
+.dark .text-xl {
+    color: #f1f5f9 !important;
+}
+
+.dark .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* Override for elements inside cards */
+.dark .bg-white *,
+.dark .bg-gray-50 *,
+.dark .bg-gray-100 * {
+    color: #e2e8f0 !important;
+}
+.dark .bg-white .text-gray-400,
+.dark .bg-gray-50 .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark .bg-white .text-gray-500,
+.dark .bg-gray-50 .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark .bg-white .text-gray-600,
+.dark .bg-gray-50 .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark .bg-white .text-gray-700,
+.dark .bg-gray-50 .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark .bg-white .text-gray-800,
+.dark .bg-gray-50 .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* INPUTS - DARK */
+.dark input,
+.dark select,
+.dark textarea {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+    color: #e2e8f0 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #94a3b8 !important;
+}
+.dark input:focus,
+.dark select:focus,
+.dark textarea:focus {
+    background-color: #1e293b !important;
+    border-color: #FF3B30 !important;
+    outline: none;
+}
+
+/* LABELS - DARK */
+.dark label,
+.dark .block.text-sm,
+.dark .text-xs.font-bold,
+.dark .font-bold.text-gray-600,
+.dark .font-bold.text-gray-700,
+.dark .font-bold.text-gray-800 {
+    color: #f1f5f9 !important;
+}
+
+/* RECIPE CARDS - DARK */
+.dark #recipe-wrapper .text-gray-400,
+.dark #recipe-wrapper .text-gray-500,
+.dark #recipe-wrapper .text-gray-600,
+.dark #recipe-wrapper .text-gray-700,
+.dark #recipe-wrapper .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+.dark #recipe-wrapper .bg-gray-50 .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #recipe-wrapper .bg-gray-50 .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #recipe-wrapper .bg-gray-50 .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #recipe-wrapper .bg-gray-50 .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #recipe-wrapper .bg-gray-50 .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* SUMMARY TABLE - DARK */
+.dark #summary-table .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #summary-table .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #summary-table .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #summary-table .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #summary-table .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* DASHBOARD - DARK */
+.dark .text-gray-400.uppercase {
+    color: #94a3b8 !important;
+}
+.dark .text-gray-800 {
+    color: #ffffff !important;
+}
+.dark .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+
+/* MODAL - DARK */
+.dark .modal-enter .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark .modal-enter .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark .modal-enter .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark .modal-enter .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark .modal-enter .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* CATEGORY TAGS - DARK */
+.dark .bg-blue-50.text-blue-700 {
+    color: #93c5fd !important;
+    background-color: #1e3a5f !important;
+}
+.dark .bg-blue-50.text-blue-700.border-blue-200 {
+    border-color: #3b82f6 !important;
+}
+
+/* DROPDOWN - DARK */
+.dark .dropdown-menu {
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+.dark .dropdown-menu button {
+    color: #e2e8f0 !important;
+}
+.dark .dropdown-menu button:hover {
+    background-color: #2d3748 !important;
+}
+
+/* SETTINGS - DARK */
+.dark #tab-settings .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #tab-settings .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #tab-settings .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #tab-settings .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #tab-settings .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* PENJUALAN TABLES - DARK */
+.dark #table-penjualan .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #table-penjualan .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #table-penjualan .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #table-penjualan .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #table-penjualan .text-gray-800 {
+    color: #ffffff !important;
+}
+.dark #table-penjualan-input .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #table-penjualan-input .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #table-penjualan-input .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #table-penjualan-input .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #table-penjualan-input .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* BAHAN BAKU TABLE - DARK */
+.dark #table-bahan-baku .text-gray-400 {
+    color: #94a3b8 !important;
+}
+.dark #table-bahan-baku .text-gray-500 {
+    color: #cbd5e1 !important;
+}
+.dark #table-bahan-baku .text-gray-600 {
+    color: #e2e8f0 !important;
+}
+.dark #table-bahan-baku .text-gray-700 {
+    color: #f1f5f9 !important;
+}
+.dark #table-bahan-baku .text-gray-800 {
+    color: #ffffff !important;
+}
+
+/* KATEGORI LIST - DARK */
+.dark #list-manajemen-kategori .text-gray-400,
+.dark #list-manajemen-kategori .text-gray-500,
+.dark #list-manajemen-kategori .text-gray-600,
+.dark #list-manajemen-kategori .text-gray-700,
+.dark #list-manajemen-kategori .text-gray-800,
+.dark #list-manajemen-sub-kategori .text-gray-400,
+.dark #list-manajemen-sub-kategori .text-gray-500,
+.dark #list-manajemen-sub-kategori .text-gray-600,
+.dark #list-manajemen-sub-kategori .text-gray-700,
+.dark #list-manajemen-sub-kategori .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+/* THEME TOGGLE BUTTONS - BOTH */
+.theme-btn {
+    transition: all 0.2s ease;
+}
+.light .theme-btn {
+    background-color: #ffffff;
+    color: #1e293b;
+    border-color: #d1d5db;
+}
+.light .theme-btn:hover {
+    background-color: #f1f5f9;
+}
+.light .theme-btn.bg-\[\#FF3B30\] {
+    background-color: #FF3B30 !important;
+    color: #ffffff !important;
+    border-color: #FF3B30 !important;
+}
+.dark .theme-btn {
+    background-color: #1e293b;
+    color: #e2e8f0;
+    border-color: #475569;
+}
+.dark .theme-btn:hover {
+    background-color: #2d3748;
+}
+.dark .theme-btn.bg-\[\#FF3B30\] {
+    background-color: #FF3B30 !important;
+    color: #ffffff !important;
+    border-color: #FF3B30 !important;
+}
+
+/* NAVBAR USER STATUS - BOTH */
+#user-status {
+    color: #FF3B30 !important;
+    background-color: rgba(255, 59, 48, 0.1) !important;
+    border-color: rgba(255, 59, 48, 0.2) !important;
+}
+.dark #user-status {
+    color: #FF3B30 !important;
+    background-color: rgba(255, 59, 48, 0.15) !important;
+    border-color: rgba(255, 59, 48, 0.3) !important;
+}
+
+/* SCROLLBAR - BOTH */
+::-webkit-scrollbar {
+    width: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+

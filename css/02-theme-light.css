@@ -1,0 +1,294 @@
+/* ================================================================
+   LIGHT THEME - MAXIMUM CONTRAST
+   ================================================================ */
+body {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+.dark body {
+    background-color: #0f172a;
+    color: #e2e8f0;
+}
+
+/* --- LIGHT THEME OVERRIDES --- */
+.light .bg-white {
+    background-color: #ffffff !important;
+}
+.light .bg-gray-50 {
+    background-color: #f8fafc !important;
+}
+.light .bg-gray-100 {
+    background-color: #f1f5f9 !important;
+}
+.light .bg-gray-200 {
+    background-color: #e2e8f0 !important;
+}
+.light .bg-gray-300 {
+    background-color: #d1d5db !important;
+}
+.light .border-gray-100 {
+    border-color: #e2e8f0 !important;
+}
+.light .border-gray-200 {
+    border-color: #cbd5e1 !important;
+}
+.light .border-gray-300 {
+    border-color: #94a3b8 !important;
+}
+
+/* ALL TEXT - LIGHT THEME - DARK AND READABLE */
+.light,
+.light *,
+.light .text-gray-400,
+.light .text-gray-500,
+.light .text-gray-600,
+.light .text-gray-700,
+.light .text-gray-800,
+.light p,
+.light span,
+.light div,
+.light label,
+.light h1, .light h2, .light h3, .light h4, .light h5, .light h6,
+.light .block,
+.light .font-bold,
+.light .font-semibold,
+.light .font-medium,
+.light .text-sm,
+.light .text-xs,
+.light .text-base,
+.light .text-lg,
+.light .text-xl {
+    color: #0f172a !important;
+}
+
+/* But keep muted colors for specific elements */
+.light .text-gray-400 {
+    color: #475569 !important;
+}
+.light .text-gray-500 {
+    color: #334155 !important;
+}
+.light .text-gray-600 {
+    color: #1e293b !important;
+}
+.light .text-gray-700 {
+    color: #0f172a !important;
+}
+.light .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* Override for elements inside white cards */
+.light .bg-white *,
+.light .bg-gray-50 *,
+.light .bg-gray-100 * {
+    color: #0f172a !important;
+}
+.light .bg-white .text-gray-400,
+.light .bg-gray-50 .text-gray-400 {
+    color: #475569 !important;
+}
+.light .bg-white .text-gray-500,
+.light .bg-gray-50 .text-gray-500 {
+    color: #334155 !important;
+}
+
+/* === HPP CARD (bg-gray-800) IN LIGHT THEME === */
+.light .bg-gray-800 {
+    background-color: #e2e8f0 !important;
+}
+.light .bg-gray-800 *,
+.light .bg-gray-800 .text-gray-300,
+.light .bg-gray-800 .text-white,
+.light .bg-gray-800 .font-black,
+.light .bg-gray-800 .font-bold,
+.light .bg-gray-800 .text-emerald-400,
+.light .bg-gray-800 .text-blue-300,
+.light .bg-gray-800 .text-red-500 {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .text-gray-300 {
+    color: #334155 !important;
+}
+.light .bg-gray-800 .border-gray-600 {
+    border-color: #94a3b8 !important;
+}
+
+/* === DARK THEME HPP CARD === */
+.dark .bg-gray-800 {
+    background-color: #1e293b !important;
+}
+.dark .bg-gray-800 *,
+.dark .bg-gray-800 .text-gray-300,
+.dark .bg-gray-800 .text-white,
+.dark .bg-gray-800 .font-black,
+.dark .bg-gray-800 .font-bold,
+.dark .bg-gray-800 .text-emerald-400,
+.dark .bg-gray-800 .text-blue-300,
+.dark .bg-gray-800 .text-red-500 {
+    color: #f1f5f9 !important;
+}
+.dark .bg-gray-800 .text-gray-300 {
+    color: #94a3b8 !important;
+}
+.dark .bg-gray-800 .border-gray-600 {
+    border-color: #475569 !important;
+}
+
+/* INPUTS - LIGHT */
+.light input,
+.light select,
+.light textarea {
+    background-color: #ffffff !important;
+    border-color: #cbd5e1 !important;
+    color: #0f172a !important;
+}
+.light input::placeholder,
+.light textarea::placeholder {
+    color: #64748b !important;
+}
+.light input:focus,
+.light select:focus,
+.light textarea:focus {
+    background-color: #ffffff !important;
+    border-color: #FF3B30 !important;
+    outline: none;
+}
+
+/* LABELS - LIGHT */
+.light label,
+.light .block.text-sm,
+.light .text-xs.font-bold,
+.light .font-bold.text-gray-600,
+.light .font-bold.text-gray-700,
+.light .font-bold.text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* RECIPE CARDS - LIGHT */
+.light #recipe-wrapper .text-gray-400,
+.light #recipe-wrapper .text-gray-500,
+.light #recipe-wrapper .text-gray-600,
+.light #recipe-wrapper .text-gray-700,
+.light #recipe-wrapper .text-gray-800 {
+    color: #0f172a !important;
+}
+.light #recipe-wrapper .bg-gray-50 .text-gray-400,
+.light #recipe-wrapper .bg-gray-50 .text-gray-500,
+.light #recipe-wrapper .bg-gray-50 .text-gray-600,
+.light #recipe-wrapper .bg-gray-50 .text-gray-700,
+.light #recipe-wrapper .bg-gray-50 .text-gray-800 {
+    color: #0f172a !important;
+}
+.light #recipe-wrapper .bg-gray-50 .text-gray-400 {
+    color: #475569 !important;
+}
+
+/* SUMMARY TABLE - LIGHT */
+.light #summary-table .text-gray-400,
+.light #summary-table .text-gray-500,
+.light #summary-table .text-gray-600,
+.light #summary-table .text-gray-700,
+.light #summary-table .text-gray-800 {
+    color: #0f172a !important;
+}
+.light #summary-table .text-gray-400 {
+    color: #475569 !important;
+}
+
+/* DASHBOARD - LIGHT */
+.light .text-gray-400.uppercase {
+    color: #475569 !important;
+}
+.light .text-gray-800 {
+    color: #0f172a !important;
+}
+.light .text-gray-700 {
+    color: #1e293b !important;
+}
+
+/* MODAL - LIGHT */
+.light .modal-enter .text-gray-400,
+.light .modal-enter .text-gray-500,
+.light .modal-enter .text-gray-600,
+.light .modal-enter .text-gray-700,
+.light .modal-enter .text-gray-800 {
+    color: #0f172a !important;
+}
+.light .modal-enter .text-gray-400 {
+    color: #475569 !important;
+}
+
+/* CATEGORY TAGS - LIGHT */
+.light .bg-blue-50.text-blue-700 {
+    color: #1e3a5f !important;
+    background-color: #dbeafe !important;
+}
+.light .bg-blue-50.text-blue-700.border-blue-200 {
+    border-color: #93c5fd !important;
+}
+
+/* DROPDOWN - LIGHT */
+.light .dropdown-menu {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+}
+.light .dropdown-menu button {
+    color: #0f172a !important;
+}
+.light .dropdown-menu button:hover {
+    background-color: #f1f5f9 !important;
+}
+
+/* SETTINGS - LIGHT */
+.light #tab-settings .text-gray-400,
+.light #tab-settings .text-gray-500,
+.light #tab-settings .text-gray-600,
+.light #tab-settings .text-gray-700,
+.light #tab-settings .text-gray-800 {
+    color: #0f172a !important;
+}
+.light #tab-settings .text-gray-400 {
+    color: #475569 !important;
+}
+
+/* PENJUALAN TABLES - LIGHT */
+.light #table-penjualan .text-gray-400,
+.light #table-penjualan .text-gray-500,
+.light #table-penjualan .text-gray-600,
+.light #table-penjualan .text-gray-700,
+.light #table-penjualan .text-gray-800,
+.light #table-penjualan-input .text-gray-400,
+.light #table-penjualan-input .text-gray-500,
+.light #table-penjualan-input .text-gray-600,
+.light #table-penjualan-input .text-gray-700,
+.light #table-penjualan-input .text-gray-800 {
+    color: #0f172a !important;
+}
+
+/* BAHAN BAKU TABLE - LIGHT */
+.light #table-bahan-baku .text-gray-400,
+.light #table-bahan-baku .text-gray-500,
+.light #table-bahan-baku .text-gray-600,
+.light #table-bahan-baku .text-gray-700,
+.light #table-bahan-baku .text-gray-800 {
+    color: #0f172a !important;
+}
+.light #table-bahan-baku .text-gray-400 {
+    color: #475569 !important;
+}
+
+/* KATEGORI LIST - LIGHT */
+.light #list-manajemen-kategori .text-gray-400,
+.light #list-manajemen-kategori .text-gray-500,
+.light #list-manajemen-kategori .text-gray-600,
+.light #list-manajemen-kategori .text-gray-700,
+.light #list-manajemen-kategori .text-gray-800,
+.light #list-manajemen-sub-kategori .text-gray-400,
+.light #list-manajemen-sub-kategori .text-gray-500,
+.light #list-manajemen-sub-kategori .text-gray-600,
+.light #list-manajemen-sub-kategori .text-gray-700,
+.light #list-manajemen-sub-kategori .text-gray-800 {
+    color: #0f172a !important;
+}
+

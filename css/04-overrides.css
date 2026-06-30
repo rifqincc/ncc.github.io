@@ -1,0 +1,342 @@
+/* ===== PERBAIKAN KHUSUS UNTUK HPP CARD DI LIGHT THEME ===== */
+.light .bg-gray-800.text-white {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .text-gray-300 {
+    color: #334155 !important;
+}
+.light .bg-gray-800 .text-white {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .font-black {
+    color: #0f172a !important;
+}
+.light .bg-gray-800 .font-bold.text-emerald-400 {
+    color: #0b7a4a !important;
+}
+.light .bg-gray-800 .font-bold.text-red-500 {
+    color: #b91c1c !important;
+}
+.light .bg-gray-800 .text-blue-300 {
+    color: #1e40af !important;
+}
+.light .bg-gray-800 .border-gray-600 {
+    border-color: #94a3b8 !important;
+}
+
+.dark .bg-gray-800.text-white {
+    background-color: #1e293b !important;
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .text-gray-300 {
+    color: #94a3b8 !important;
+}
+.dark .bg-gray-800 .text-white {
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .font-black {
+    color: #f8fafc !important;
+}
+.dark .bg-gray-800 .font-bold.text-emerald-400 {
+    color: #34d399 !important;
+}
+.dark .bg-gray-800 .font-bold.text-red-500 {
+    color: #f87171 !important;
+}
+.dark .bg-gray-800 .text-blue-300 {
+    color: #93c5fd !important;
+}
+.dark .bg-gray-800 .border-gray-600 {
+    border-color: #475569 !important;
+}
+
+/* ================================================================
+   WHITE HEADER DESCRIPTIONS (both themes)
+   ================================================================ */
+.bg-gradient-to-r .text-sm.opacity-90,
+.bg-gradient-to-r p {
+    color: #ffffff !important;
+}
+.bg-gradient-to-r h2 {
+    color: #ffffff !important;
+}
+
+/* ================================================================
+   SUB-DESCRIPTIONS IN IMPORT/EXPORT SECTIONS - BLACK IN LIGHT THEME
+   ================================================================ */
+.light .bg-gradient-to-r.from-blue-50 p,
+.light .bg-gradient-to-r.from-purple-50 p,
+.light .bg-gradient-to-r.from-green-50 p,
+.light .bg-gradient-to-r.from-amber-50 p,
+.light .bg-gradient-to-r.from-blue-50 .text-sm,
+.light .bg-gradient-to-r.from-purple-50 .text-sm,
+.light .bg-gradient-to-r.from-green-50 .text-sm,
+.light .bg-gradient-to-r.from-amber-50 .text-sm {
+    color: #0f172a !important;
+}
+.light .bg-gradient-to-r.from-blue-50 .font-bold,
+.light .bg-gradient-to-r.from-purple-50 .font-bold,
+.light .bg-gradient-to-r.from-green-50 .font-bold,
+.light .bg-gradient-to-r.from-amber-50 .font-bold {
+    color: #1e3a5f !important;
+}
+.dark .bg-gradient-to-r.from-blue-50 .font-bold,
+.dark .bg-gradient-to-r.from-purple-50 .font-bold,
+.dark .bg-gradient-to-r.from-green-50 .font-bold,
+.dark .bg-gradient-to-r.from-amber-50 .font-bold {
+    color: #ffffff !important;
+}
+
+/* ================================================================
+   NAVBAR BACKGROUND SELALU HITAM DI SEMUA TEMA
+   ================================================================ */
+nav,
+nav .bg-white\/90,
+nav .bg-white\/80,
+nav .bg-white {
+    background-color: #0f172a !important;
+}
+nav .border-gray-200,
+nav .border-b {
+    border-color: #1e293b !important;
+}
+
+/* ================================================================
+   F&B PRO TEXT SELALU PUTIH DI SEMUA TEMA
+   ================================================================ */
+#brand-link h1 {
+    color: #ffffff !important;
+    background: none !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background-clip: unset !important;
+}
+
+/* ================================================================
+   NAMA MENU DI CARD RESEP SELALU PUTIH DI SEMUA TEMA
+   ================================================================ */
+#recipe-wrapper .bg-gradient-to-br h3,
+#recipe-wrapper .bg-gradient-to-br .text-xl,
+#recipe-wrapper .bg-gradient-to-br .font-black,
+#recipe-wrapper .bg-gradient-to-br .tracking-wide,
+#recipe-wrapper .bg-gradient-to-br .break-words {
+    color: #ffffff !important;
+}
+/* Override semua kemungkinan override dari theme */
+.light #recipe-wrapper .bg-gradient-to-br h3,
+.light #recipe-wrapper .bg-gradient-to-br .text-xl,
+.light #recipe-wrapper .bg-gradient-to-br .font-black,
+.light #recipe-wrapper .bg-gradient-to-br .tracking-wide,
+.light #recipe-wrapper .bg-gradient-to-br .break-words {
+    color: #ffffff !important;
+}
+.dark #recipe-wrapper .bg-gradient-to-br h3,
+.dark #recipe-wrapper .bg-gradient-to-br .text-xl,
+.dark #recipe-wrapper .bg-gradient-to-br .font-black,
+.dark #recipe-wrapper .bg-gradient-to-br .tracking-wide,
+.dark #recipe-wrapper .bg-gradient-to-br .break-words {
+    color: #ffffff !important;
+}
+
+/* ================================================================
+   NAVBAR DARK THEME - GELAP (sudah ditangani di atas)
+   ================================================================ */
+
+/* ================================================================
+   ACTIVE TAB TEXT - HITAM DI TEMA GELAP
+   ================================================================ */
+.dark .btn-tab.active {
+    color: #000000 !important;
+}
+.dark .btn-tab.active::after {
+    background-color: #000000 !important;
+}
+
+/* Mobile menu active tab */
+.dark .btn-tab-mobile.bg-blue-50 {
+    background-color: #e2e8f0 !important;
+    color: #000000 !important;
+}
+
+/* ================================================================
+   OVERHEAD STATUS BADGE - HITAM DI SEMUA TEMA
+   ================================================================ */
+#overhead-status-badge {
+    color: #000000 !important;
+}
+.dark #overhead-status-badge {
+    color: #000000 !important;
+}
+
+/* ================================================================
+   PERBAIKAN KONTRAST UNTUK TEKS DI KATEGORI (TEMA GELAP)
+   ================================================================ */
+/* Sub-judul "Integrasi Kategori Master" dan deskripsi */
+.dark .bg-purple-50 .font-bold,
+.dark .bg-purple-50 .text-sm,
+.dark .bg-purple-50 .text-purple-700,
+.dark .bg-purple-50 .text-purple-800 {
+    color: #f1f5f9 !important;
+}
+.dark .bg-purple-50 .text-purple-700 {
+    color: #c4b5fd !important;
+}
+
+/* Tombol "+ Tambah Baru" di kategori */
+.dark .bg-blue-100.text-blue-700,
+.dark .bg-indigo-100.text-indigo-700 {
+    color: #93c5fd !important;
+    background-color: #1e3a5f !important;
+}
+.dark .bg-blue-100.text-blue-700:hover,
+.dark .bg-indigo-100.text-indigo-700:hover {
+    background-color: #1e4a7a !important;
+}
+
+/* Nama kategori dan sub-kategori di list */
+.dark #list-manajemen-kategori .font-semibold,
+.dark #list-manajemen-sub-kategori .font-semibold {
+    color: #e2e8f0 !important;
+}
+
+/* Label "Master Kategori" dan "Master Sub-Kategori" */
+.dark .text-\[#1e3a5f\],
+.dark .text-indigo-800 {
+    color: #93c5fd !important;
+}
+.dark .text-\[#1e3a5f\] {
+    color: #93c5fd !important;
+}
+
+/* ================================================================
+   PERBAIKAN KONTRAST UNTUK TOMBOL SETTINGS (TEMA GELAP)
+   ================================================================ */
+.dark #btn-simpan-settings {
+    background-color: #FF3B30 !important;
+    color: #ffffff !important;
+}
+.dark #btn-simpan-settings:hover {
+    background-color: #e0352a !important;
+}
+
+/* ================================================================
+   SETTINGS - ALL USERS CAN ACCESS THEME, ONLY HEAD CAN ACCESS OTHERS
+   ================================================================ */
+.role-head.hidden {
+    display: none !important;
+}
+.light .role-head.hidden {
+    display: none !important;
+}
+
+/* ================================================================
+   TEKS KHUSUS TETAP HITAM DI SEMUA TEMA
+   ================================================================ */
+/* "Import/Export Resep" - di tab HPP */
+.light .bg-gradient-to-r.from-blue-50 .font-bold.text-blue-800,
+.dark .bg-gradient-to-r.from-blue-50 .font-bold.text-blue-800,
+.light .bg-gradient-to-r.from-blue-50 .text-blue-800,
+.dark .bg-gradient-to-r.from-blue-50 .text-blue-800 {
+    color: #0f172a !important;
+}
+
+/* "Sistem Import Cerdas" - di tab Bahan Baku */
+.light .bg-gradient-to-r.from-green-50 .font-bold.text-green-800,
+.dark .bg-gradient-to-r.from-green-50 .font-bold.text-green-800,
+.light .bg-gradient-to-r.from-green-50 .text-green-800,
+.dark .bg-gradient-to-r.from-green-50 .text-green-800 {
+    color: #0f172a !important;
+}
+
+/* "Integrasi Kategori Master" - di tab Kategori */
+.light .bg-gradient-to-r.from-purple-50 .font-bold.text-purple-800,
+.dark .bg-gradient-to-r.from-purple-50 .font-bold.text-purple-800,
+.light .bg-gradient-to-r.from-purple-50 .text-purple-800,
+.dark .bg-gradient-to-r.from-purple-50 .text-purple-800 {
+    color: #0f172a !important;
+}
+
+/* "Import/Export Penjualan" - di tab Data Penjualan */
+.light .bg-gradient-to-r.from-amber-50 .font-bold.text-amber-800,
+.dark .bg-gradient-to-r.from-amber-50 .font-bold.text-amber-800,
+.light .bg-gradient-to-r.from-amber-50 .text-amber-800,
+.dark .bg-gradient-to-r.from-amber-50 .text-amber-800 {
+    color: #0f172a !important;
+}
+
+/* Deskripsi di bawah judul tersebut (teks kecil) */
+.light .bg-gradient-to-r.from-blue-50 .text-sm,
+.dark .bg-gradient-to-r.from-blue-50 .text-sm,
+.light .bg-gradient-to-r.from-green-50 .text-sm,
+.dark .bg-gradient-to-r.from-green-50 .text-sm,
+.light .bg-gradient-to-r.from-purple-50 .text-sm,
+.dark .bg-gradient-to-r.from-purple-50 .text-sm,
+.light .bg-gradient-to-r.from-amber-50 .text-sm,
+.dark .bg-gradient-to-r.from-amber-50 .text-sm {
+    color: #0f172a !important;
+}
+
+/* Pastikan tombol di dalam area tersebut tetap terlihat */
+.light .bg-gradient-to-r.from-blue-50 .border-blue-300,
+.dark .bg-gradient-to-r.from-blue-50 .border-blue-300,
+.light .bg-gradient-to-r.from-green-50 .border-green-300,
+.dark .bg-gradient-to-r.from-green-50 .border-green-300,
+.light .bg-gradient-to-r.from-purple-50 .border-purple-300,
+.dark .bg-gradient-to-r.from-purple-50 .border-purple-300,
+.light .bg-gradient-to-r.from-amber-50 .border-amber-300,
+.dark .bg-gradient-to-r.from-amber-50 .border-amber-300 {
+    border-color: #94a3b8 !important;
+}
+
+/* ================================================================
+   TOMBOL "Template", "Import Excel", "Export" TETAP PUTIH DI TEMA GELAP
+   ================================================================ */
+.dark button.bg-white.text-blue-700,
+.dark button.bg-white.text-green-700,
+.dark button.bg-white.text-purple-700,
+.dark button.bg-white.text-amber-700,
+.dark button.bg-white.text-gray-700 {
+    color: #ffffff !important;
+    background-color: #1e293b !important;
+    border-color: #475569 !important;
+}
+.dark button.bg-white.text-blue-700:hover,
+.dark button.bg-white.text-green-700:hover,
+.dark button.bg-white.text-purple-700:hover,
+.dark button.bg-white.text-amber-700:hover,
+.dark button.bg-white.text-gray-700:hover {
+    background-color: #2d3748 !important;
+}
+/* Tombol "Template" spesifik */
+.dark .bg-white.border-blue-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-green-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-purple-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-amber-300 {
+    border-color: #475569 !important;
+}
+.dark .bg-white.border-gray-300 {
+    border-color: #475569 !important;
+}
+/* Tombol "Export" */
+.dark .bg-white.text-gray-700 {
+    color: #ffffff !important;
+}
+
+.light .text-emerald-600 {
+    color: #059669 !important;  /* hijau tua */
+}
+.light .text-red-600 {
+    color: #dc2626 !important;  /* merah */
+}
+.light .text-emerald-400 {
+    color: #34d399 !important;
+}
+.light .text-red-500 {
+    color: #ef4444 !important;
+}
