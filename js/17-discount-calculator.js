@@ -146,7 +146,7 @@ function renderDiscountTable() {
             <tr class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                 <td class="p-3 text-center">${item.index}</td>
                 <td class="p-3 font-semibold text-gray-700 dark:text-gray-300">${item.nama}</td>
-                <td class="p-3 text-right font-semibold text-gray-700 dark:text-gray-300">${formatRp(item.harga_jual)}</td>
+                <td class="p-3 text-right font-semibold text-blue-600 dark:text-blue-400">${formatRp(item.harga_jual)}</td>
                 <td class="p-3 text-center font-bold text-blue-600 dark:text-blue-400">${item.diskon.toFixed(1)}%</td>
                 <td class="p-3 text-right font-bold text-gray-800 dark:text-white">${formatRp(item.harga_diskon)}</td>
                 <td class="p-3 text-right text-gray-500 dark:text-gray-400">${formatRp(item.hpp)}</td>
